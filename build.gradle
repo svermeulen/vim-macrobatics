@@ -13,7 +13,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "com.svkj.vim:macrobatics-builder:[0,)"
+    classpath "com.svkj.gradle:macrobatics-builder:[0,)"
   }
 }
 
