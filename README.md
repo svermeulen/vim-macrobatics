@@ -39,11 +39,9 @@ After playback, you can use the standard repeat operator `.` to re-play the same
 
 # Navigating history
 
-To view the current history of macros, you can execute `:Macros`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).  It should look like this:
+To view the current history of macros, you can execute `:Macros`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).
 
-<img align="right" width="300" height="300" src="https://i.imgur.com/4zd8xV8.png">
-
-As you can see here, the current macro is displayed alongside `m` (the default value for `g:macrobaticsDefaultRegister`) and the rest are displayed as indexes into the history buffer.
+You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:macrobaticsDefaultRegister`) and the rest are displayed as indexes into the history buffer.
 
 To navigate the history, you can add bindings similar to the following to your `.vimrc`:
 
