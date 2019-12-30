@@ -5,10 +5,10 @@
 
 Macrobatics is a plugin for vim/neovim with the goal of making macros easier to use.  It adds the following functionality to Vim's built-in support for macros:
 
-* A history of macros, which can be navigated to play previously recorded ones
+* A history of macros, which can be navigated to play previously recorded ones.
 * Repeatability.  Vim's repeat operator `.` can be used to play the most recently recorded/played macro.
 * Edit existing macros by appending or prepending content to it.
-* Nested macros (create macros that play other macros)
+* Nested macros (create macros that play other macros).
 
 # Installation
 
@@ -23,7 +23,7 @@ nmap gr <plug>(Mac_RecordNew)
 
 # Recording
 
-Assuming you use the above mappings, you can then press `gr` in Vim to begin recording a new macro.  Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.
+With the above mappings, you can then press `gr` in Vim to begin recording a new macro.  Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.
 
 Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` how this is [configurable](#configuration).
 
