@@ -1,0 +1,3 @@
+[submodule "builder"]
+	path = builder
+	url = https://gitlab.com/svkj/private/vim/macrobatics-builder

@@ -1,0 +1,16 @@
+
+rootProject.name = 'vim-macrobatics'
+
+includeBuild 'builder'
+
+// Allow optionally adding this file to include other builds easily for testing
+def includeBuildsFile = file("includedBuilds.txt")
+
+if (includeBuildsFile.exists()) {
+  for (def line : includeBuildsFile.readLines()) {
+    if (!line.startsWith('#') && line.trim().size() > 0) {
+      includeBuild line
+    }
+  }
+}
+

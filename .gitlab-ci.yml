@@ -1,0 +1,43 @@
+
+image: sfvermeulen/ci:javagit
+
+before_script:
+  - git submodule update --init
+
+stages:
+  - build
+  - syncGithub
+  - deploy
+
+syncGithub:
+  stage: syncGithub
+  only: 
+  - /^release-\d+.\d+$/
+  - master
+  script: ./gradlew -i -S syncGithub
+
+publish:
+  stage: deploy
+  script: ./gradlew -i -S publishAllPublicationsToMavenRepository
+  when: manual
+
+markRelease:
+  stage: deploy
+  only: 
+  - /^release-\d+.\d+$/
+  - master
+  script: ./gradlew -i -S markRelease
+  when: manual
+
+publishSnapshot:
+  stage: deploy
+  script: ./gradlew -i -S version publishAllPublicationsToSnapshotsRepository -PasSnapshot
+  when: manual
+
+# publishRelease:
+#   stage: deploy
+#   only:
+#     # Only on tags of the form vX.Y.Z
+#     - /^v\d+.\d+.\d+$/
+#   script: ./gradlew -i -S publishAllPublicationsToMavenRepository
+
