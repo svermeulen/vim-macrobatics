@@ -61,21 +61,27 @@ nmap ggp <plug>(Mac_Append)
 nmap ggr <plug>(Mac_Prepend)
 ```
 
-Then, you can add content to the current macro by pressing `ggp`.  When you execute this, the current macro will be played and then you will immediately enter record mode.  After ending the recording, the current macro will include both the previous content and the new content appended to the end of it.
+Then, you can add content to the current macro by pressing `ggp`.  This will play the given macro and then immediately enter record mode to record any new content to the end of it.
 
-The prepend `ggr` command works similarly except that you enter recording mode immediately, and the current macro is played immediately after you end the recording.
+The prepend `ggr` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
 
 The suggested values are `ggp` and `ggr` because they work similarly to `gp` and `gr` (`gp` and `gpp` play immediately, `gr` and `grr` record immediately)
 
 # Moving registers
 
-Note that immediately after ending the recording, you can use Vim's repeat operator `.` to run it again somewhere else.
+In some cases you might find yourself making use of multiple macros at once.  In this case, it is cumbersome to need to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
 
 ```viml
 nmap gs <plug>(Mac_StoreCurrent)
 ```
 
-Or if you run it sometime later then you can 
+Then, the next time you want to give a name to the active macro, you can execute `"xgs` where `x` is the register you want to associate with the active macro.  You can then record some number of new macro by executing `gr`, while also having access to the `x` macro (which you can replay by executing `"xgp`).
+
+Note that in addition to replaying the `x` macro with `"xgp`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
+
+# Nested macros
+
+TBD
 
 # Configuration
 
@@ -91,7 +97,7 @@ let g:Mac_DisplayMacroMaxWidth = 80
 Note that including these lines in your `.vimrc` will have zero effect, because these are already the default values.  So you'll only need to include the lines which you customize.
 
 The values are:
-* `g:Mac_DefaultRegister` - The default register that macros get stored to, when an explicit register is not given.
+* `g:Mac_DefaultRegister` - The default register that macros get stored to when an explicit register is not given.
 * `g:Mac_MaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
 * `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`
 * `g:Mac_DisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
@@ -104,7 +110,7 @@ If you find yourself using this plugin and no longer have a need for Vim's built
 nnoremap <nowait> q :echo 'my new binding'<cr>
 ```
 
-Without the `<nowait>` setting here, vim would wait for another keypress for the built-in macro mapping.
+Without the `<nowait>` setting here, after hitting `q`, vim will always wait for another keypress for the built-in macro mapping, even if you add a mapping for `q` by itself.
 
 ## <a id="shada-support"></a>Persistent/Shared History
 
