@@ -1,8 +1,8 @@
 
-let s:defaultMacroReg = get(g:, 'macrobaticsDefaultRegister', 'm')
-let s:maxItems = get(g:, 'macrobaticsMaxItems', 10)
-let s:saveHistoryToShada = get(g:, 'macrobaticsSavePersistently', 0)
-let s:displayMacroMaxWidth = get(g:, 'macrobaticsDisplayMacroMaxWidth', 80)
+let s:defaultMacroReg = get(g:, 'Mac_DefaultRegister', 'm')
+let s:maxItems = get(g:, 'Mac_MaxItems', 10)
+let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
+let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 
 let s:playInfoStack = []
 
@@ -14,9 +14,9 @@ if s:saveHistoryToShada
     endif
 
     if !has("nvim")
-        echoerr "Neovim is required when setting g:macrobaticsSavePersistently to 1"
+        echoerr "Neovim is required when setting g:Mac_SavePersistently to 1"
     elseif &shada !~ '\V!'
-        echoerr "Must enable global variable support by including ! in the shada property when setting g:macrobaticsSavePersistently to 1.  See macrobatics documentation for details or run :help 'shada'."
+        echoerr "Must enable global variable support by including ! in the shada property when setting g:Mac_SavePersistently to 1.  See macrobatics documentation for details or run :help 'shada'."
     endif
 else
     let s:history = []

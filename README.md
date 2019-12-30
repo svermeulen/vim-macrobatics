@@ -33,15 +33,15 @@ You can then stop recording by pressing the same keys again (`gr`)
 
 # Playback and repeat
 
-Again assuming the above plug mappings, you can re-play the current macro by pressing `gp`.  Similar to `gr`, you can also pass a register to use using the standard Vim convention (eg. `"xgp` to execute the macro stored in the `x` register).   And when not specified by default it will play whatever macro is stored in the `m` register (or whatever register is set for `g:macrobaticsDefaultRegister` as described [below](#configuration))
+Again assuming the above plug mappings, you can replay the current macro by pressing `gp`.  Similar to `gr`, you can also pass a register to use using the standard Vim convention (eg. `"xgp` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default register (`m`  by default but also [configurable](#configuration))
 
-After playback, you can use the standard repeat operator `.` to re-play the same macro again in a different spot.
+After playback, you can use the standard repeat operator `.` to replay the same macro again in a different spot.  Or, you can also execute `gp` / `"xgp` again for the same effect.
 
 # Navigating history
 
 To view the current history of macros, you can execute `:Macros`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).
 
-You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:macrobaticsDefaultRegister`) and the rest are displayed as indexes into the history buffer.
+You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:Mac_DefaultRegister`) and the rest are displayed as indexes into the history buffer.
 
 To navigate the history, you can add bindings similar to the following to your `.vimrc`:
 
@@ -52,9 +52,9 @@ nmap ]m <plug>(Mac_RotateForward)
 
 Then if you execute `[m` or `]m` you should see a preview of the newly selected macro in status bar.
 
-# Editting Macros
+# Editing Macros
 
-In many cases, after recording a macro, you realize that you would like to tweak it slightly, usually be either adding something to the beginning or adding something to the end.  Macrobatics has two plugs to make this process very easy.  For example, you could add the following bindings to your `.vimrc`:
+In many cases, after recording a macro, you realize that you would like to tweak it slightly, usually by either adding something to the beginning or adding something to the end.  Macrobatics provides two bindings to make this process very easy.  For example, you could add the following bindings to your `.vimrc`:
 
 ```viml
 nmap ggp <plug>(Mac_Append)
@@ -82,19 +82,19 @@ Or if you run it sometime later then you can
 This is the default configuration:
 
 ```viml
-let g:macrobaticsDefaultRegister = 'm'
-let g:macrobaticsMaxItems = 10
-let g:macrobaticsSavePersistently = 0
-let g:macrobaticsDisplayMacroMaxWidth = 80
+let g:Mac_DefaultRegister = 'm'
+let g:Mac_MaxItems = 10
+let g:Mac_SavePersistently = 0
+let g:Mac_DisplayMacroMaxWidth = 80
 ```
 
 Note that including these lines in your `.vimrc` will have zero effect, because these are already the default values.  So you'll only need to include the lines which you customize.
 
 The values are:
-* `g:macrobaticsDefaultRegister` - The default register that macros get stored to, when an explicit register is not given.
-* `g:macrobaticsMaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
-* `g:macrobaticsSavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`
-* `g:macrobaticsDisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
+* `g:Mac_DefaultRegister` - The default register that macros get stored to, when an explicit register is not given.
+* `g:Mac_MaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
+* `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`
+* `g:Mac_DisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
 
 # Re-mapping `q`
 
@@ -108,7 +108,7 @@ Without the `<nowait>` setting here, vim would wait for another keypress for the
 
 ## <a id="shada-support"></a>Persistent/Shared History
 
-When `g:macrobaticsSavePersistently` is set to 1, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+When `g:Mac_SavePersistently` is set to 1, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
 
 You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
 
