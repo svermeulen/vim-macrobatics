@@ -23,13 +23,13 @@ nmap gr <plug>(Mac_RecordNew)
 
 # Recording
 
-With the above mappings, you can then press `gr` in Vim to begin recording a new macro.  Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.
+With the above mappings, you can then press `gr` in Vim to begin recording a new macro.
 
-Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` how this is [configurable](#configuration).
+However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` how this is [configurable](#configuration).
 
 It works this way just because specyfing the register this way is more consistent wih other actions in Vim like delete, yank, etc.
 
-You can then stop recording by pressing the same key again (`gr`)
+You can then stop recording by pressing the same keys again (`gr`)
 
 # Playback and repeat
 
