@@ -204,7 +204,7 @@ endfunction
 
 function s:setRecordInfo(reg, prependContents, appendContents)
     call s:assert(s:recordInfo is v:null)
-    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:prependContents}
+    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents}
 endfunction
 
 function! macrobatics#recordNew(reg)
@@ -227,7 +227,7 @@ function! macrobatics#append(reg, cnt)
     call s:assert(a:cnt == 0 || a:cnt == 1)
 
     let recordReg = s:getMacroRegister(a:reg)
-    call s:setRecordInfo(recordReg, v:null, getreg(recordReg))
+    call s:setRecordInfo(recordReg, getreg(recordReg), v:null)
 
     let s:isRecording = 1
     call feedkeys("q" . recordReg, 'nt')
@@ -240,7 +240,7 @@ function! macrobatics#prepend(reg, cnt)
 
     let recordReg = s:getMacroRegister(a:reg)
 
-    call s:setRecordInfo(recordReg, getreg(recordReg), v:null)
+    call s:setRecordInfo(recordReg, v:null, getreg(recordReg))
 
     let s:isRecording = 1
     return "q" . recordReg
