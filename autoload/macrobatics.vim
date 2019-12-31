@@ -4,9 +4,12 @@ let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 
-let s:playInfoStack = []
+let s:queuedMacro = v:null
+let s:macrosInProgress = 0
+let s:repeatMacro = v:null
 
 let s:isRecording = 0
+let s:recordInfo = v:null
 
 if s:saveHistoryToShada
     if !exists("g:MACROBATICS_HISTORY")
@@ -39,21 +42,24 @@ function s:assert(value, ...)
     endif
 endfunction
 
-function! s:popPlayInfo()
-    call s:assert(len(s:playInfoStack) != 0)
-
-    if len(s:playInfoStack) == 1
-        return s:playInfoStack[0]
+function! macrobatics#play(_)
+    if s:queuedMacro is v:null
+        call s:assert(!(s:repeatMacro is v:null))
+        let data = s:repeatMacro
+    else
+        let data = s:queuedMacro
+        let s:queuedMacro = v:null
     endif
 
-    let result = s:playInfoStack[-1]
-    call remove(s:playInfoStack, len(s:playInfoStack) - 1)
-    return result
-endfunction
+    let s:macrosInProgress += 1
+    let previousMacrosInProgress = s:macrosInProgress
 
-function! macrobatics#play(_)
-    let data = s:popPlayInfo()
-    exec "normal! " . data.cnt . "@" . data.reg
+    try
+        exec "normal! " . data.cnt . "@" . data.reg
+    finally
+        call s:assert(previousMacrosInProgress == s:macrosInProgress)
+        let s:macrosInProgress -= 1
+    endtry
 endfunction
 
 function! macrobatics#getDefaultReg()
@@ -167,26 +173,27 @@ function! macrobatics#rotate(offset)
 endfunction
 
 function! macrobatics#onRecordingComplete(_)
-    let playInfo = s:playInfoStack[-1]
-    let recordReg = playInfo.reg
+
+    call s:assert(!(s:recordInfo is v:null))
+
+    let info = s:recordInfo
+    let s:recordInfo = v:null
+
+    let recordReg = info.reg
     let recordContent = getreg(recordReg)
-    if playInfo.prependContents != v:null
-        let recordContent = playInfo.prependContents . recordContent
+    if !(info.prependContents is v:null)
+        let recordContent = info.prependContents . recordContent
     endif
-    if playInfo.appendContents != v:null
-        let recordContent = recordContent . playInfo.appendContents
-        call setreg(recordReg, playInfo.appendContents)
+    if !(info.appendContents is v:null)
+        let recordContent = recordContent . info.appendContents
+        call setreg(recordReg, info.appendContents)
         exec "normal! @" . recordReg
     endif
     call setreg(recordReg, recordContent)
     call macrobatics#addToHistory(recordContent)
-    set opfunc=macrobatics#play
-endfunction
 
-function! s:pushPlayInfo(reg, cnt)
-    let item = {'reg': a:reg, 'cnt': a:cnt, 'prependContents': v:null, 'appendContents': v:null}
-    call add(s:playInfoStack, item)
-    return item
+    call macrobatics#setupPlay(recordReg, 1)
+    set opfunc=macrobatics#play
 endfunction
 
 function s:getMacroRegister(requestedReg)
@@ -194,6 +201,11 @@ function s:getMacroRegister(requestedReg)
         return s:defaultMacroReg
     endif
     return a:requestedReg
+endfunction
+
+function s:setRecordInfo(reg, prependContents, appendContents)
+    call s:assert(s:recordInfo is v:null)
+    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:prependContents}
 endfunction
 
 function! macrobatics#recordNew(reg)
@@ -206,9 +218,7 @@ function! macrobatics#recordNew(reg)
     endif
 
     let recordReg = s:getMacroRegister(a:reg)
-
-    call s:pushPlayInfo(recordReg, 1)
-
+    call s:setRecordInfo(recordReg, v:null, v:null)
     let s:isRecording = 1
     return "q" . recordReg
 endfunction
@@ -218,9 +228,7 @@ function! macrobatics#append(reg, cnt)
     call s:assert(a:cnt == 0 || a:cnt == 1)
 
     let recordReg = s:getMacroRegister(a:reg)
-
-    let playInfo = s:pushPlayInfo(recordReg, 1)
-    let playInfo.prependContents = getreg(recordReg)
+    call s:setRecordInfo(recordReg, v:null, getreg(recordReg))
 
     let s:isRecording = 1
     call feedkeys("q" . recordReg, 'nt')
@@ -233,16 +241,23 @@ function! macrobatics#prepend(reg, cnt)
 
     let recordReg = s:getMacroRegister(a:reg)
 
-    let playInfo = s:pushPlayInfo(recordReg, 1)
-    let playInfo.appendContents = getreg(recordReg)
+    call s:setRecordInfo(recordReg, getreg(recordReg), v:null)
 
     let s:isRecording = 1
-    echom "executing: " . "q" . recordReg
     return "q" . recordReg
 endfunction
 
 function! macrobatics#setupPlay(reg, cnt)
-    let cnt = a:cnt > 0 ? a:cnt : 1
-    let playReg = s:getMacroRegister(a:reg)
-    call s:pushPlayInfo(playReg, cnt)
+    call s:assert(s:queuedMacro is v:null)
+
+    let playInfo = { 
+        \ 'reg': s:getMacroRegister(a:reg),
+        \ 'cnt': a:cnt > 0 ? a:cnt : 1
+        \ }
+
+    let s:queuedMacro = playInfo
+
+    if s:macrosInProgress == 0
+        let s:repeatMacro = playInfo
+    endif
 endfunction

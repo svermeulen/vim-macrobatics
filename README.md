@@ -3,12 +3,15 @@
 
 # Macrobatics.vim
 
-Macrobatics is a plugin for vim/neovim with the goal of making macros easier to use.  It adds the following functionality to Vim's built-in support for macros:
+Macrobatics is a plugin for vim/neovim with the goal of making macros easier to use.
 
-* A history of macros, which can be navigated to play previously recorded ones.
-* Repeatability.  Vim's repeat operator `.` can be used to play the most recently recorded/played macro.
-* Edit existing macros by appending or prepending content to it.
-* Nested macros (create macros that play other macros).
+# Features
+
+* Provides a history of macros, which can be navigated to play previously recorded ones.
+* Makes macros repeatable with the `.` operator.
+* Supports editting existing macros by appending or prepending content to it.
+* Supports nested macros (create macros that play other macros).
+* Written in pure vim-script
 
 # Installation
 
@@ -36,6 +39,8 @@ You can then stop recording by pressing the same keys again (`gr`)
 Again assuming the above plug mappings, you can replay the current macro by pressing `gp`.  Similar to `gr`, you can also pass a register to use using the standard Vim convention (eg. `"xgp` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default register (`m`  by default but also [configurable](#configuration))
 
 After playback, you can use the standard repeat operator `.` to replay the same macro again in a different spot.  Or, you can also execute `gp` / `"xgp` again for the same effect.
+
+You can also pass a count to the play command to immediately repeat the macro a given number of times.
 
 # Navigating history
 
