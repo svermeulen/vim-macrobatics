@@ -191,8 +191,7 @@ function! macrobatics#onRecordingComplete(_)
     endif
     call setreg(recordReg, recordContent)
     call macrobatics#addToHistory(recordContent)
-
-    call macrobatics#setupPlay(recordReg, 1)
+    let s:repeatMacro = s:createPlayInfo(recordReg, 1)
     set opfunc=macrobatics#play
 endfunction
 
@@ -247,13 +246,18 @@ function! macrobatics#prepend(reg, cnt)
     return "q" . recordReg
 endfunction
 
-function! macrobatics#setupPlay(reg, cnt)
-    call s:assert(s:queuedMacro is v:null)
-
-    let playInfo = { 
+function s:createPlayInfo(reg, cnt)
+    return { 
         \ 'reg': s:getMacroRegister(a:reg),
         \ 'cnt': a:cnt > 0 ? a:cnt : 1
         \ }
+endfunction
+
+function! macrobatics#setupPlay(reg, cnt)
+    call s:assert(s:queuedMacro is v:null)
+
+    let playInfo = s:createPlayInfo(
+        \ s:getMacroRegister(a:reg), a:cnt > 0 ? a:cnt : 1) 
 
     let s:queuedMacro = playInfo
 
