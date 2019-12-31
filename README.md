@@ -15,6 +15,8 @@ Macrobatics is a plugin for vim/neovim with the goal of making macros easier to 
 
 # Installation
 
+Install into vim using your preferred plugin manager (eg. [vim-plug](https://github.com/junegunn/vim-plug)).
+
 Note that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings below:
 
 For example, to add just the most basic functionality:
@@ -102,7 +104,7 @@ Note that including these lines in your `.vimrc` will have zero effect, because 
 The values are:
 * `g:Mac_DefaultRegister` - The default register that macros get stored to when an explicit register is not given.
 * `g:Mac_MaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
-* `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`
+* `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`.  Note that this setting is only necessary for macros that are in the history buffer.  Macros that you've assigned to a specific register should be automatically restored as part of built-in Vim behaviour.
 * `g:Mac_DisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
 
 # Advanced
