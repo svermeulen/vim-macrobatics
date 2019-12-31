@@ -34,10 +34,10 @@ publishSnapshot:
   script: ./gradlew -i -S version publishAllPublicationsToSnapshotsRepository -PasSnapshot
   when: manual
 
-# publishRelease:
-#   stage: deploy
-#   only:
-#     # Only on tags of the form vX.Y.Z
-#     - /^v\d+.\d+.\d+$/
-#   script: ./gradlew -i -S publishAllPublicationsToMavenRepository
+publishRelease:
+  stage: deploy
+  only:
+    # Only on tags of the form vX.Y.Z
+    - /^v\d+.\d+.\d+$/
+  script: ./gradlew -i -S publishAllPublicationsToMavenRepository
 
