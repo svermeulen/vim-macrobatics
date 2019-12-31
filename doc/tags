@@ -1,0 +1,16 @@
+g:Mac_DefaultRegister	macrobatics.txt	/*g:Mac_DefaultRegister*
+g:Mac_DisplayMacroMaxWidth	macrobatics.txt	/*g:Mac_DisplayMacroMaxWidth*
+g:Mac_MaxItems	macrobatics.txt	/*g:Mac_MaxItems*
+g:Mac_SavePersistently	macrobatics.txt	/*g:Mac_SavePersistently*
+macrobatics	macrobatics.txt	/*macrobatics*
+macrobatics-configuration	macrobatics.txt	/*macrobatics-configuration*
+macrobatics-editing	macrobatics.txt	/*macrobatics-editing*
+macrobatics-features	macrobatics.txt	/*macrobatics-features*
+macrobatics-history	macrobatics.txt	/*macrobatics-history*
+macrobatics-installation	macrobatics.txt	/*macrobatics-installation*
+macrobatics-moving-registers	macrobatics.txt	/*macrobatics-moving-registers*
+macrobatics-nested-macros	macrobatics.txt	/*macrobatics-nested-macros*
+macrobatics-playback	macrobatics.txt	/*macrobatics-playback*
+macrobatics-recording	macrobatics.txt	/*macrobatics-recording*
+macrobatics-shada	macrobatics.txt	/*macrobatics-shada*
+macrobatics.txt	macrobatics.txt	/*macrobatics.txt*
