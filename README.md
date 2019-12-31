@@ -25,9 +25,9 @@ nmap gr <plug>(Mac_RecordNew)
 
 With the above mappings, you can then press `gr` in Vim to begin recording a new macro.
 
-However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` how this is [configurable](#configuration).
+However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` however this is [configurable](#configuration).
 
-It works this way just because specyfing the register this way is more consistent wih other actions in Vim like delete, yank, etc.
+It works this way just because specifying the register this way is more consistent with other actions in Vim like delete, yank, etc.
 
 You can then stop recording by pressing the same keys again (`gr`)
 
@@ -65,6 +65,8 @@ Then, you can add content to the current macro by pressing `ggp`.  This will pla
 
 The prepend `ggr` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
 
+Then in both cases, the macro will be updated to contain the change.
+
 The suggested values are `ggp` and `ggr` because they work similarly to `gp` and `gr` (`gp` and `gpp` play immediately, `gr` and `grr` record immediately)
 
 # Moving registers
@@ -75,13 +77,9 @@ In some cases you might find yourself making use of multiple macros at once.  In
 nmap gs <plug>(Mac_StoreCurrent)
 ```
 
-Then, the next time you want to give a name to the active macro, you can execute `"xgs` where `x` is the register you want to associate with the active macro.  You can then record some number of new macro by executing `gr`, while also having access to the `x` macro (which you can replay by executing `"xgp`).
+Then, the next time you want to give a name to the active macro, you can execute `"xgs` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gr`, while also having access to the `x` macro (which you can replay by executing `"xgp`).
 
 Note that in addition to replaying the `x` macro with `"xgp`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
-
-# Nested macros
-
-TBD
 
 # Configuration
 
@@ -101,6 +99,10 @@ The values are:
 * `g:Mac_MaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
 * `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`
 * `g:Mac_DisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
+
+# Nested macros
+
+In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes included in the `y` macro as well.
 
 # Re-mapping `q`
 
