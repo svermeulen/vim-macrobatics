@@ -11,7 +11,7 @@ Macrobatics is a plugin for vim/neovim with the goal of making macros easier to 
 * Makes macros repeatable with the `.` operator.
 * Supports editting existing macros by appending or prepending content to it.
 * Supports nested macros (create macros that play other macros).
-* Written in pure vim-script
+* Written in pure vim-script.
 
 # Installation
 
@@ -74,7 +74,7 @@ Then, you can add content to the current macro by pressing `ggp`.  This will pla
 
 The prepend `ggr` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
 
-Then in both cases, the macro will be updated to contain the change.
+Then in both cases, the macro will be updated to contain the new change.
 
 The suggested values are `ggp` and `ggr` because they work similarly to `gp` and `gr` (`gp` and `gpp` play immediately, `gr` and `grr` record immediately)
 
@@ -113,7 +113,7 @@ The values are:
 
 ## Nested macros
 
-In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes included in the `y` macro as well.
+In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes automatically included in the `y` macro as well.
 
 ## Re-mapping `q`
 
