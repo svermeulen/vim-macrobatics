@@ -115,6 +115,32 @@ The values are:
 
 In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes automatically included in the `y` macro as well.
 
+## Map to key bindings
+
+If you've created a macro you find yourself using often across sessions of vim, you might want to create a key binding for it.
+
+Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
+
+```viml
+nmap <leader>t [MACRO CONTENTS]
+```
+
+Note that we need to use nmap here in case our macro uses any non-default mappings.  To actually fill in the value for `[MACRO CONTENTS]`, you can paste from the `m` register like this:
+
+```viml
+nmap <leader>t ^R^Rm
+```
+
+We type `^R^Rm` to paste the raw values from the macro.  Alternatively, you could create a function for your macro instead:
+
+```viml
+function s:doSomething()
+	normal [MACRO CONTENTS]
+endfunction
+
+nnoremap <space>t :<c-u>call <sid>doSomething()<cr>
+```
+
 ## Re-mapping `q`
 
 If you find yourself using this plugin and no longer have a need for Vim's built-in way of recording registers, then you might want to re-use the `q` key for something else.  An easy way to achieve this is to use the `<nowait>` setting when adding a new binding. For example:
