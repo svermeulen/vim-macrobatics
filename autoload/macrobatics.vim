@@ -119,7 +119,10 @@ endfunction
 
 function! macrobatics#onRecordingComplete(_)
 
-    call s:assert(!(s:recordInfo is v:null))
+    if (s:recordInfo is v:null)
+        " This can happen when repeat.vim is not installed, so just do nothing in this case
+        return
+    endif
 
     let info = s:recordInfo
     let s:recordInfo = v:null
@@ -142,7 +145,7 @@ function! macrobatics#onRecordingComplete(_)
     call setreg(recordReg, recordContent)
     call macrobatics#addToHistory(recordContent)
     let s:repeatMacro = s:createPlayInfo(recordReg, 1)
-    call repeat#set("\<plug>(Mac_Play)")
+    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
 endfunction
 
 function! macrobatics#recordNew(reg)
@@ -233,7 +236,7 @@ function s:onPlayMacroCompleted()
     call s:assert(s:macrosInProgress >= 0)
 
     if s:macrosInProgress == 0
-        call repeat#set("\<plug>(Mac__RepeatLast)")
+        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
     endif
 endfunction
 
