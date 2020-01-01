@@ -4,7 +4,7 @@ if exists('g:Mac_Initialized')
 endif
 let g:Mac_Initialized = 1
 
-nnoremap <silent> <plug>(Mac_Play) :<c-u>call macrobatics#setupPlay(v:register, v:count)<cr>:set opfunc=macrobatics#play<cr>g@l
+nnoremap <plug>(Mac_Play) :<c-u>call macrobatics#play(v:register, v:count)<cr>
 nnoremap <expr> <plug>(Mac_RecordNew) macrobatics#recordNew(v:register)
 
 nnoremap <expr> <plug>(Mac_Append) macrobatics#append(v:register, v:count)

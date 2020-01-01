@@ -4,12 +4,14 @@ let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 
-let s:queuedMacro = v:null
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 
 let s:isRecording = 0
 let s:recordInfo = v:null
+
+nnoremap <silent> <plug>(Mac__OnPlayMacroCompleted) :<c-u>call <sid>onPlayMacroCompleted()<cr>
+nnoremap <silent> <plug>(Mac__RepeatLast) :<c-u>call <sid>repeatLast()<cr>
 
 if s:saveHistoryToShada
     if !exists("g:MACROBATICS_HISTORY")
@@ -33,44 +35,6 @@ function! macrobatics#getHistory()
     endif
 
     return s:history
-endfunction
-
-function s:assert(value, ...)
-    if !a:value
-        let message = a:0 ? a:1 : 'Assert hit inside vim-macrobatics plugin'
-        throw message
-    endif
-endfunction
-
-function! macrobatics#play(_)
-    if s:queuedMacro is v:null
-        call s:assert(!(s:repeatMacro is v:null))
-        let data = s:repeatMacro
-    else
-        let data = s:queuedMacro
-        let s:queuedMacro = v:null
-    endif
-
-    let s:macrosInProgress += 1
-    let previousMacrosInProgress = s:macrosInProgress
-
-    try
-        exec "normal! " . data.cnt . "@" . data.reg
-    finally
-        call s:assert(previousMacrosInProgress == s:macrosInProgress)
-        let s:macrosInProgress -= 1
-    endtry
-endfunction
-
-function! macrobatics#getDefaultReg()
-    let clipboardFlags = split(&clipboard, ',')
-    if index(clipboardFlags, 'unnamedplus') >= 0
-        return "+"
-    elseif index(clipboardFlags, 'unnamed') >= 0
-        return "*"
-    else
-        return "\""
-    endif
 endfunction
 
 function! macrobatics#addToHistory(entry)
@@ -108,25 +72,6 @@ endfunction
 function! macrobatics#onVimEnter()
     " This should still work when saving persisently since it should be a no-op
     call macrobatics#addToHistory(getreg(s:defaultMacroReg))
-endfunction
-
-function! s:formatMacro(macro)
-    let result = strtrans(a:macro)
-    if len(result) > s:displayMacroMaxWidth
-        return result[: s:displayMacroMaxWidth] . '…'
-    endif
-    return result
-endfunction
-
-function! s:displayMacro(macro, index)
-    if a:index == 0
-        echohl Directory | echo  'm   '
-    else
-        echohl Directory | echo  printf("%-4d", a:index)
-    endif
-
-    echohl None      | echon s:formatMacro(a:macro)
-    echohl None
 endfunction
 
 function! macrobatics#clearHistory()
@@ -187,24 +132,17 @@ function! macrobatics#onRecordingComplete(_)
     if !(info.appendContents is v:null)
         let recordContent = recordContent . info.appendContents
         call setreg(recordReg, info.appendContents)
+        " Note here that we are not using feedkeys() like we do in play()
+        " This might cause a problem if the behaviour given by feedkeys()
+        " differs from normal! but I can't reproduce any bugs here yet
+        " So something to watch out for.  If the behaviour is different then we can
+        " change this to feedkeys as well
         exec "normal! @" . recordReg
     endif
     call setreg(recordReg, recordContent)
     call macrobatics#addToHistory(recordContent)
     let s:repeatMacro = s:createPlayInfo(recordReg, 1)
-    set opfunc=macrobatics#play
-endfunction
-
-function s:getMacroRegister(requestedReg)
-    if a:requestedReg == "_" || a:requestedReg == macrobatics#getDefaultReg()
-        return s:defaultMacroReg
-    endif
-    return a:requestedReg
-endfunction
-
-function s:setRecordInfo(reg, prependContents, appendContents)
-    call s:assert(s:recordInfo is v:null)
-    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents}
+    call repeat#set("\<plug>(Mac_Play)")
 endfunction
 
 function! macrobatics#recordNew(reg)
@@ -253,15 +191,80 @@ function s:createPlayInfo(reg, cnt)
         \ }
 endfunction
 
-function! macrobatics#setupPlay(reg, cnt)
-    call s:assert(s:queuedMacro is v:null)
+function! s:repeatLast()
+    call macrobatics#play(s:repeatMacro.reg, s:repeatMacro.cnt)
+endfunction
 
+function! macrobatics#play(reg, cnt)
     let playInfo = s:createPlayInfo(
         \ s:getMacroRegister(a:reg), a:cnt > 0 ? a:cnt : 1) 
-
-    let s:queuedMacro = playInfo
 
     if s:macrosInProgress == 0
         let s:repeatMacro = playInfo
     endif
+
+    let s:macrosInProgress += 1
+
+    call feedkeys(playInfo.cnt . "@" . playInfo.reg, 'n')
+    call feedkeys("\<plug>(Mac__OnPlayMacroCompleted)", 'm')
 endfunction
+
+function s:assert(value, ...)
+    if !a:value
+        let message = a:0 ? a:1 : 'Assert hit inside vim-macrobatics plugin'
+        throw message
+    endif
+endfunction
+
+function! s:getDefaultReg()
+    let clipboardFlags = split(&clipboard, ',')
+    if index(clipboardFlags, 'unnamedplus') >= 0
+        return "+"
+    elseif index(clipboardFlags, 'unnamed') >= 0
+        return "*"
+    else
+        return "\""
+    endif
+endfunction
+
+function s:onPlayMacroCompleted()
+    let s:macrosInProgress -= 1
+
+    call s:assert(s:macrosInProgress >= 0)
+
+    if s:macrosInProgress == 0
+        call repeat#set("\<plug>(Mac__RepeatLast)")
+    endif
+endfunction
+
+function! s:formatMacro(macro)
+    let result = strtrans(a:macro)
+    if len(result) > s:displayMacroMaxWidth
+        return result[: s:displayMacroMaxWidth] . '…'
+    endif
+    return result
+endfunction
+
+function! s:displayMacro(macro, index)
+    if a:index == 0
+        echohl Directory | echo  'm   '
+    else
+        echohl Directory | echo  printf("%-4d", a:index)
+    endif
+
+    echohl None      | echon s:formatMacro(a:macro)
+    echohl None
+endfunction
+
+function s:getMacroRegister(requestedReg)
+    if a:requestedReg == "_" || a:requestedReg == s:getDefaultReg()
+        return s:defaultMacroReg
+    endif
+    return a:requestedReg
+endfunction
+
+function s:setRecordInfo(reg, prependContents, appendContents)
+    call s:assert(s:recordInfo is v:null)
+    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents}
+endfunction
+

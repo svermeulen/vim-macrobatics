@@ -17,7 +17,9 @@ Macrobatics is a plugin for vim/neovim with the goal of making macros easier to 
 
 Install into vim using your preferred plugin manager (eg. [vim-plug](https://github.com/junegunn/vim-plug)).
 
-Note that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings below:
+Note that in order for macros to be repeatable with the `.` key, you will need to install [vim-repeat](https://github.com/tpope/vim-repeat).
+
+Note also that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings below:
 
 For example, to add just the most basic functionality:
 
