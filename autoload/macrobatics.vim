@@ -142,10 +142,17 @@ function! macrobatics#onRecordingComplete(_)
         " change this to feedkeys as well
         exec "normal! @" . recordReg
     endif
-    call setreg(recordReg, recordContent)
-    call macrobatics#addToHistory(recordContent)
-    let s:repeatMacro = s:createPlayInfo(recordReg, 1)
-    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+
+    if recordContent == ''
+        " In this case, reset the macro register and do not add to history
+        " View this as a cancel
+        call setreg(recordReg, info.previousContents)
+    else
+        call setreg(recordReg, recordContent)
+        call macrobatics#addToHistory(recordContent)
+        let s:repeatMacro = s:createPlayInfo(recordReg, 1)
+        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+    endif
 endfunction
 
 function! macrobatics#recordNew(reg)
@@ -268,6 +275,6 @@ endfunction
 
 function s:setRecordInfo(reg, prependContents, appendContents)
     call s:assert(s:recordInfo is v:null)
-    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents}
+    let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents, 'previousContents': getreg(a:reg)}
 endfunction
 
