@@ -1,0 +1,1 @@
+* Fixed to do nothing after recording an no-op macro
