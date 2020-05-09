@@ -29,6 +29,10 @@ else
     let g:MACROBATICS_HISTORY = []
 endif
 
+function! macrobatics#getRecordRegister()
+    return s:defaultMacroReg
+endfunction
+
 function! macrobatics#getHistory()
     if s:saveHistoryToShada
         return g:MACROBATICS_HISTORY
