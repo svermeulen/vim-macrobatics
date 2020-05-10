@@ -207,8 +207,14 @@ function! macrobatics#append(reg, cnt)
 
     call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
-    call feedkeys("q" . recordReg, 'n')
-    call feedkeys("@" . recordReg, 'n')
+    " I don't know why this works and yet 
+    " call feedkeys("@" . recordReg . "q" . recordReg, 'n') does not
+    " and neither does changing the map to be an <expr>
+    " and then returning "@" . recordReg . "q" . recordReg
+    " Also, for some reason, reversing these lines and removing the 'i'
+    " works too
+    call feedkeys("@" . recordReg, 'ni')
+    call feedkeys("q" . recordReg, 'ni')
 endfunction
 
 function! s:resetPopupMenu()
