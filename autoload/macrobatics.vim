@@ -41,7 +41,12 @@ function! macrobatics#getHistory()
     return s:history
 endfunction
 
-function! macrobatics#addToHistory(entry)
+function! macrobatics#setCurrent(entry)
+    call setreg(recordReg, a:entry)
+    call s:addToHistory(a:entry)
+endfunction
+
+function! s:addToHistory(entry)
     let history = macrobatics#getHistory()
 
     if len(history) == 0 || history[0] != a:entry
@@ -75,14 +80,14 @@ endfunction
 
 function! macrobatics#onVimEnter()
     " This should still work when saving persisently since it should be a no-op
-    call macrobatics#addToHistory(getreg(s:defaultMacroReg))
+    call s:addToHistory(getreg(s:defaultMacroReg))
 endfunction
 
 function! macrobatics#clearHistory()
     let history = macrobatics#getHistory()
     let previousSize = len(history)
     call remove(history, 0, -1)
-    call macrobatics#addToHistory(getreg(s:defaultMacroReg))
+    call s:addToHistory(getreg(s:defaultMacroReg))
     echo "Cleared macro history of " . previousSize . " entries"
 endfunction
 
@@ -152,8 +157,7 @@ function! macrobatics#onRecordingComplete(_)
         " View this as a cancel
         call setreg(recordReg, info.previousContents)
     else
-        call setreg(recordReg, recordContent)
-        call macrobatics#addToHistory(recordContent)
+        call macrobatics#setCurrent(recordContent)
         let s:repeatMacro = s:createPlayInfo(recordReg, 1)
         silent! call repeat#set("\<plug>(Mac__RepeatLast)")
     endif
