@@ -42,7 +42,7 @@ function! macrobatics#getHistory()
 endfunction
 
 function! macrobatics#setCurrent(entry)
-    call setreg(recordReg, a:entry)
+    call setreg(s:defaultMacroReg, a:entry)
     call s:addToHistory(a:entry)
 endfunction
 
@@ -157,7 +157,8 @@ function! macrobatics#onRecordingComplete(_)
         " View this as a cancel
         call setreg(recordReg, info.previousContents)
     else
-        call macrobatics#setCurrent(recordContent)
+        call setreg(recordReg, recordContent)
+        call s:addToHistory(recordContent)
         let s:repeatMacro = s:createPlayInfo(recordReg, 1)
         silent! call repeat#set("\<plug>(Mac__RepeatLast)")
     endif
