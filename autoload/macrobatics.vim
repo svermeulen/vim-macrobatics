@@ -158,6 +158,7 @@ function! macrobatics#onRecordingComplete(_)
         " If prepending this will also not bother executing the previous macro
         " If appending, then the macro will already have been executed
         call setreg(info.reg, info.previousContents)
+        let s:recordInfo = v:null
         return
     endif
     
