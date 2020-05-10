@@ -3,6 +3,7 @@ let s:defaultMacroReg = get(g:, 'Mac_DefaultRegister', 'm')
 let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
+let s:previousCompleteOpt=v:null
 
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
@@ -127,6 +128,7 @@ function! macrobatics#rotate(offset)
 endfunction
 
 function! s:onRecordingFullyComplete()
+    call s:resetPopupMenu()
     let info = s:recordInfo
     let s:recordInfo = v:null
     let fullContent = info.recordContent
@@ -152,6 +154,7 @@ endfunction
 function! macrobatics#onRecordingComplete(_)
 
     if (s:recordInfo is v:null)
+        call s:resetPopupMenu()
         " This can happen when repeat.vim is not installed, so just do nothing in this case
         return
     endif
@@ -177,6 +180,8 @@ function! macrobatics#recordNew(reg)
 
     let recordReg = s:getMacroRegister(a:reg)
     call s:setRecordInfo(recordReg, v:null, v:null)
+
+    call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
     return "q" . recordReg
 endfunction
@@ -188,9 +193,21 @@ function! macrobatics#append(reg, cnt)
     let recordReg = s:getMacroRegister(a:reg)
     call s:setRecordInfo(recordReg, getreg(recordReg), v:null)
 
+    call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
     call feedkeys("q" . recordReg, 'nt')
     return "@" . recordReg
+endfunction
+
+function s:resetPopupMenu()
+    call s:assert(s:previousCompleteOpt != v:null)
+    exec "set completeopt=" . s:previousCompleteOpt 
+    let s:previousCompleteOpt=v:null
+endfunction
+
+function s:temporarilyDisablePopupMenu()
+    let s:previousCompleteOpt=&completeopt
+    set completeopt=noselect
 endfunction
 
 function! macrobatics#prepend(reg, cnt)
@@ -201,6 +218,7 @@ function! macrobatics#prepend(reg, cnt)
 
     call s:setRecordInfo(recordReg, v:null, getreg(recordReg))
 
+    call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
     return "q" . recordReg
 endfunction
