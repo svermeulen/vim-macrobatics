@@ -147,8 +147,19 @@ function! s:onRecordingFullyComplete()
         call setreg(info.reg, fullContent)
         call s:addToHistory(fullContent)
         let s:repeatMacro = s:createPlayInfo(info.reg, 1)
-        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+        call s:markForRepeat()
     endif
+endfunction
+
+function! s:markForRepeat()
+    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+    " Force disable the logic in vim-repeat that waits for CursorMove
+    " This cause a bug where if you make a change immediately after recording a macro
+    " and then attempt to repeat that change it will repeat the macro instead
+    " Not sure why this logic is necessary in vim-repeat
+    augroup repeat_custom_motion
+        autocmd!
+    augroup END
 endfunction
 
 function! macrobatics#onRecordingComplete(_)
@@ -200,13 +211,13 @@ function! macrobatics#append(reg, cnt)
     call feedkeys("@" . recordReg, 'n')
 endfunction
 
-function s:resetPopupMenu()
+function! s:resetPopupMenu()
     call s:assert(s:previousCompleteOpt != v:null)
     exec "set completeopt=" . s:previousCompleteOpt 
     let s:previousCompleteOpt=v:null
 endfunction
 
-function s:temporarilyDisablePopupMenu()
+function! s:temporarilyDisablePopupMenu()
     let s:previousCompleteOpt=&completeopt
     set completeopt=noselect
 endfunction
@@ -284,7 +295,7 @@ function! s:onPlayMacroCompleted()
             call s:assert(!(s:recordInfo.appendContents is v:null))
             call s:onRecordingFullyComplete()
         else
-            silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+            call s:markForRepeat()
         endif
     endif
 endfunction
