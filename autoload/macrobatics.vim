@@ -109,6 +109,18 @@ function! macrobatics#getNamedMacros()
     return map(macroFilePaths, 's:getMacroNameFromPath(v:val)')
 endfunction
 
+function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
+    if a:cnt == 0
+        let content = getreg(s:defaultMacroReg)
+    else
+        let history = macrobatics#getHistory()
+        let content = history[a:cnt]
+    endif
+
+    call setreg(a:reg, content)
+    call s:echo("Stored to '%s' register: %s", a:reg, s:formatMacro(content))
+endfunction
+
 " This was copied from coc.nvim
 function! s:chooseMacroSaveDirectory()
     let saveDir = get(g:, 'Mac_NamedMacrosDirectory', v:null)

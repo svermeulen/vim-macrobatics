@@ -81,13 +81,32 @@ The suggested values are `ggp` and `ggr` because they work similarly to `gp` and
 
 ## Named Macros
 
-If you find yourself re-using a macro quite often, then you might consider giving it a name, and maybe even adding a direct key mapping for it.  You can do this by first adding the necessary configuration to your `.vimrc` to enable named macros.  For example:
+If you find yourself re-using a macro quite often, then you might consider giving it a name, and maybe even adding a direct key mapping for it.  You can do this by first adding the following mapping or similar to your `.vimrc`:
 
 ```viml
 nmap <leader>nm <plug>(Mac_NameCurrentMacro)
 ```
 
-Then, every time you create a new macro that you want to name, you can execute this mapping, and you will be prompted for a name.
+Now, every time you create a new macro that you want to name, you can execute `<leader>nm`, and you will then be prompted to type in a name for it.  Then, to add a mapping for it, you can add the following to your `.vimrc`:
+
+```viml
+nnoremap <space>tm :call macrobatics#playNamedMacro('foo')<cr>
+```
+
+Where `foo` is the name that you typed into the prompt, and `<space>tm` is the keys that you want to use for your custom macro.
+
+## Playing Named Macros Directly
+
+In many cases, you will have named macros that you don't use enough to justify adding an entirely new key binding.  In these cases, it's helpful to be able to select the named macro by searching through the list of named macros whenever you need it instead.  You can do this by adding the following maps or similar to your `.vimrc`:
+
+```viml
+nmap <leader>sm <plug>(Mac_SearchForNamedMacroAndSelect)
+nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
+```
+
+Note that in order for these maps to work, you must either have [fzf.vim](https://github.com/junegunn/fzf.vim) or [vim-clap](https://github.com/liuchengxu/vim-clap) installed.
+
+Now, you can execute `<leader>gp`, then choose the named macro you want to play, then hit enter to play it.  Or, you can execute `<leader>sm` to set the current macro to the chosen named macro.  This latter mapping is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).
 
 ## Configuration
 
@@ -124,11 +143,6 @@ You can also use this feature to sync the macro history across multiple running 
 
 Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
 
-## FAQ
-
-* How do I select a specific macro from the history after executing `:DisplayMacroHistory`?
-    * The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
-
 # Advanced Topics
 
 ## Moving registers
@@ -147,34 +161,6 @@ Note that in addition to replaying the `x` macro with `"xgp`, you can also re-re
 
 In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes automatically included in the `y` macro as well.
 
-## Map to key bindings
-
-If you've created a macro you find yourself using often across sessions of vim, you might want to create a key binding for it.
-
-Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
-
-```viml
-nmap <leader>t [MACRO CONTENTS]
-```
-
-Note that we need to use nmap here in case our macro uses any non-default mappings.  To actually fill in the value for `[MACRO CONTENTS]`, you can paste from the `m` register like this:
-
-```viml
-nmap <leader>t ^R^Rm
-```
-
-We type `^R^Rm` to paste the raw values from the macro.  Alternatively, you could create a function for your macro instead:
-
-```viml
-function s:doSomething()
-	normal [MACRO CONTENTS]
-endfunction
-
-nnoremap <space>t :<c-u>call <sid>doSomething()<cr>
-```
-
-However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  If you find this to be a problem, I would suggest using [named macros instead](#named-macros) which do not suffer from this problem (because the macro is stored into a binary file).
-
 ## Re-mapping `q`
 
 If you find yourself using this plugin and no longer have a need for Vim's built-in way of recording registers, then you might want to re-use the `q` key for something else.  An easy way to achieve this is to use the `<nowait>` setting when adding a new binding. For example:
@@ -185,3 +171,35 @@ nnoremap <nowait> q :echo 'my new binding'<cr>
 
 Without the `<nowait>` setting here, after hitting `q`, vim will always wait for another keypress for the built-in macro mapping, even if you add a mapping for `q` by itself.
 
+## FAQ
+
+* **How do I select a specific macro from the history after executing `:DisplayMacroHistory`?**
+
+    The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
+
+
+* **Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?**
+
+    Yes, this approach usually works as well.  Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
+
+    ```viml
+    nmap <leader>t [MACRO CONTENTS]
+    ```
+
+    Note that we need to use nmap here in case our macro uses any non-default mappings.  To actually fill in the value for `[MACRO CONTENTS]`, you can paste from the `m` register like this:
+
+    ```viml
+    nmap <leader>t ^R^Rm
+    ```
+
+    We type `^R^Rm` to paste the raw values from the macro.  Alternatively, you could create a function for your macro instead:
+
+    ```viml
+    function s:doSomething()
+        normal [MACRO CONTENTS]
+    endfunction
+
+    nnoremap <space>t :<c-u>call <sid>doSomething()<cr>
+    ```
+
+    However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
