@@ -126,6 +126,22 @@ function! macrobatics#rotate(offset)
     echo "Current Macro: " . s:formatMacro(history[0])
 endfunction
 
+function s:onRecordingFullyComplete()
+    let info = s:recordInfo
+    let s:recordInfo = v:null
+    let fullContent = info.recordContent
+    if !(info.prependContents is v:null)
+        let fullContent = info.prependContents . fullContent
+    endif
+    if !(info.appendContents is v:null)
+        let fullContent = fullContent . info.appendContents
+    endif
+    call setreg(info.reg, fullContent)
+    call s:addToHistory(fullContent)
+    let s:repeatMacro = s:createPlayInfo(info.reg, 1)
+    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+endfunction
+
 function! macrobatics#onRecordingComplete(_)
 
     if (s:recordInfo is v:null)
@@ -134,33 +150,12 @@ function! macrobatics#onRecordingComplete(_)
     endif
 
     let info = s:recordInfo
-    let s:recordInfo = v:null
-
-    let recordReg = info.reg
-    let recordContent = getreg(recordReg)
-    if !(info.prependContents is v:null)
-        let recordContent = info.prependContents . recordContent
-    endif
+    let info.recordContent = getreg(info.reg)
     if !(info.appendContents is v:null)
-        let recordContent = recordContent . info.appendContents
-        call setreg(recordReg, info.appendContents)
-        " Note here that we are not using feedkeys() like we do in play()
-        " This might cause a problem if the behaviour given by feedkeys()
-        " differs from normal! but I can't reproduce any bugs here yet
-        " So something to watch out for.  If the behaviour is different then we can
-        " change this to feedkeys as well
-        exec "normal! @" . recordReg
-    endif
-
-    if recordContent == ''
-        " In this case, reset the macro register and do not add to history
-        " View this as a cancel
-        call setreg(recordReg, info.previousContents)
+        call setreg(info.reg, info.appendContents)
+        call macrobatics#play(info.reg, 1)
     else
-        call setreg(recordReg, recordContent)
-        call s:addToHistory(recordContent)
-        let s:repeatMacro = s:createPlayInfo(recordReg, 1)
-        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+        call s:onRecordingFullyComplete()
     endif
 endfunction
 
@@ -257,7 +252,13 @@ function s:onPlayMacroCompleted()
     call s:assert(s:macrosInProgress >= 0)
 
     if s:macrosInProgress == 0
-        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+        let info = s:recordInfo
+        if info is v:null
+            silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+        else
+            call s:assert(!(info.appendContents is v:null))
+            call s:onRecordingFullyComplete()
+        endif
     endif
 endfunction
 
