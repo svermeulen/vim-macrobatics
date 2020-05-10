@@ -48,6 +48,20 @@ function! macrobatics#setCurrent(entry)
     call s:addToHistory(a:entry)
 endfunction
 
+function! s:removeFromHistory(entry)
+    let history = macrobatics#getHistory()
+
+    let i = 0
+    for candidate in history
+        if candidate == a:entry
+            call remove(history, i)
+            return 1
+        endif
+        let i += 1
+    endfor
+    return 0
+endfunction
+
 function! s:addToHistory(entry)
     let history = macrobatics#getHistory()
 
@@ -145,6 +159,9 @@ function! s:onRecordingFullyComplete()
         call setreg(info.reg, info.previousContents)
     else
         call setreg(info.reg, fullContent)
+        if !(info.prependContents is v:null) || !(info.appendContents is v:null)
+            call s:removeFromHistory(info.previousContents)
+        endif
         call s:addToHistory(fullContent)
         let s:repeatMacro = s:createPlayInfo(info.reg, 1)
         call s:markForRepeat()
