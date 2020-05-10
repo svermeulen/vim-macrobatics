@@ -4,6 +4,7 @@ let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 let s:previousCompleteOpt=v:null
+let s:autoFinishRecordAfterPlay = 0
 
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
@@ -138,7 +139,6 @@ function! s:onRecordingFullyComplete()
     if !(info.appendContents is v:null)
         let fullContent = fullContent . info.appendContents
     endif
-
     if fullContent == ''
         " In this case, reset the macro register and do not add to history
         " View this as a cancel
@@ -162,6 +162,7 @@ function! macrobatics#onRecordingComplete(_)
     let info = s:recordInfo
     let info.recordContent = getreg(info.reg)
     if !(info.appendContents is v:null)
+        let s:autoFinishRecordAfterPlay = 1
         call setreg(info.reg, info.appendContents)
         call macrobatics#play(info.reg, 1)
     else
@@ -277,12 +278,13 @@ function! s:onPlayMacroCompleted()
     call s:assert(s:macrosInProgress >= 0)
 
     if s:macrosInProgress == 0
-        let info = s:recordInfo
-        if info is v:null
-            silent! call repeat#set("\<plug>(Mac__RepeatLast)")
-        else
-            call s:assert(!(info.appendContents is v:null))
+        if s:autoFinishRecordAfterPlay
+            let s:autoFinishRecordAfterPlay = 0
+            call s:assert(!(s:recordInfo is v:null))
+            call s:assert(!(s:recordInfo.appendContents is v:null))
             call s:onRecordingFullyComplete()
+        else
+            silent! call repeat#set("\<plug>(Mac__RepeatLast)")
         endif
     endif
 endfunction
