@@ -126,7 +126,7 @@ function! macrobatics#rotate(offset)
     echo "Current Macro: " . s:formatMacro(history[0])
 endfunction
 
-function s:onRecordingFullyComplete()
+function! s:onRecordingFullyComplete()
     let info = s:recordInfo
     let s:recordInfo = v:null
     let fullContent = info.recordContent
@@ -198,7 +198,7 @@ function! macrobatics#prepend(reg, cnt)
     return "q" . recordReg
 endfunction
 
-function s:createPlayInfo(reg, cnt)
+function! s:createPlayInfo(reg, cnt)
     return { 
         \ 'reg': s:getMacroRegister(a:reg),
         \ 'cnt': a:cnt > 0 ? a:cnt : 1
@@ -228,7 +228,7 @@ function! macrobatics#play(reg, cnt)
     call feedkeys("\<plug>(Mac__OnPlayMacroCompleted)", 'm')
 endfunction
 
-function s:assert(value, ...)
+function! s:assert(value, ...)
     if !a:value
         let message = a:0 ? a:1 : 'Assert hit inside vim-macrobatics plugin'
         throw message
@@ -246,7 +246,7 @@ function! s:getDefaultReg()
     endif
 endfunction
 
-function s:onPlayMacroCompleted()
+function! s:onPlayMacroCompleted()
     let s:macrosInProgress -= 1
 
     call s:assert(s:macrosInProgress >= 0)
@@ -281,14 +281,14 @@ function! s:displayMacro(macro, index)
     echohl None
 endfunction
 
-function s:getMacroRegister(requestedReg)
+function! s:getMacroRegister(requestedReg)
     if a:requestedReg == "_" || a:requestedReg == s:getDefaultReg()
         return s:defaultMacroReg
     endif
     return a:requestedReg
 endfunction
 
-function s:setRecordInfo(reg, prependContents, appendContents)
+function! s:setRecordInfo(reg, prependContents, appendContents)
     call s:assert(s:recordInfo is v:null)
     let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents, 'previousContents': getreg(a:reg)}
 endfunction
