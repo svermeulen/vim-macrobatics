@@ -151,6 +151,17 @@ function! macrobatics#onRecordingComplete(_)
 
     let info = s:recordInfo
     let info.recordContent = getreg(info.reg)
+
+    if info.recordContent == ''
+        " In this case, reset the macro register and do not add to history
+        " View this as a cancel
+        " If prepending this will also not bother executing the previous macro
+        " If appending, then the macro will already have been executed
+        call setreg(info.reg, info.previousContents)
+        return
+    endif
+    
+
     if !(info.appendContents is v:null)
         call setreg(info.reg, info.appendContents)
         call macrobatics#play(info.reg, 1)
