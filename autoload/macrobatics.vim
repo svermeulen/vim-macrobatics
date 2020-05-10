@@ -3,14 +3,13 @@ let s:defaultMacroReg = get(g:, 'Mac_DefaultRegister', 'm')
 let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
-let s:namedMacrosSaveDirectory = get(g:, 'Mac_NamedMacrosDirectory', v:null)
 let s:macroFileExtension = get(g:, 'Mac_NamedMacroFileExtension', '.bin')
 let s:fuzzySearcher =  get(g:, 'Mac_NamedMacroFuzzySearcher', v:null)
+let s:namedMacrosSaveDirectory = v:null
 let s:defaultFuzzySearchers = ['clap', 'fzf']
 let s:previousCompleteOpt=v:null
 let s:autoFinishRecordAfterPlay = 0
 let s:namedMacroCache = {}
-let s:hasInitializedNamedMacros = 0
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
@@ -94,18 +93,6 @@ function! macrobatics#displayHistory()
     endfor
 endfunction
 
-function! macrobatics#storeCurrent(cnt, reg)
-    if a:cnt == 0
-        let content = getreg(s:defaultMacroReg)
-    else
-        let history = macrobatics#getHistory()
-        let content = history[a:cnt]
-    endif
-
-    call setreg(a:reg, content)
-    call s:echo("Stored to '%s' register: %s", a:reg, s:formatMacro(content))
-endfunction
-
 function! s:getMacroPathFromName(name)
     return printf("%s/%s%s", s:namedMacrosSaveDirectory, a:name, s:macroFileExtension)
 endfunction
@@ -117,17 +104,37 @@ function! s:getMacroNameFromPath(filePath)
 endfunction
 
 function! macrobatics#getNamedMacros()
-    call s:lazyInitNamedMacros()
+    call s:lazyInitNamedMacrosDir()
     let macroFilePaths = globpath(s:namedMacrosSaveDirectory, "*" . s:macroFileExtension, 0, 1)
     return map(macroFilePaths, 's:getMacroNameFromPath(v:val)')
 endfunction
 
-function! s:lazyInitNamedMacros()
-    if !s:hasInitializedNamedMacros
-        let s:hasInitializedNamedMacros = 1
-        call s:assert(!(s:namedMacrosSaveDirectory is v:null),
-            \ "Must set a value for 'g:Mac_NamedMacrosDirectory' in order to use named macros")
-        call mkdir(s:namedMacrosSaveDirectory, 'p')
+" This was copied from coc.nvim
+function! s:chooseMacroSaveDirectory()
+    let saveDir = get(g:, 'Mac_NamedMacrosDirectory', v:null)
+    if saveDir is v:null
+        if exists('$XDG_CONFIG_HOME')
+          let saveDir = resolve($XDG_CONFIG_HOME."/macrobatics")
+        else
+          if has('win32') || has('win64')
+            let saveDir = resolve(expand('~/AppData/Local/macrobatics'))
+          else
+            let saveDir = resolve(expand('~/.config/macrobatics'))
+          endif
+        endif
+    else
+        let saveDir = resolve(expand(saveDir))
+    endif
+    if !isdirectory(saveDir)
+        echohl MoreMsg | echom '[macrobatics] Creating named macro directory: '.saveDir | echohl None
+        call mkdir(saveDir, "p", 0755)
+    endif
+    return saveDir
+endfunction
+
+function! s:lazyInitNamedMacrosDir()
+    if s:namedMacrosSaveDirectory is v:null
+        let s:namedMacrosSaveDirectory = s:chooseMacroSaveDirectory()
     endif
 endfunction
 
@@ -140,7 +147,7 @@ function s:echom(...)
 endfunction
 
 function! macrobatics#nameCurrentMacro()
-    call s:lazyInitNamedMacros()
+    call s:lazyInitNamedMacrosDir()
     let name = input('Macro Name:')
     if len(name) == 0
         " View this as a cancel
@@ -199,7 +206,7 @@ function s:loadNamedMacroData(filePath)
 endfunction
 
 function! macrobatics#selectNamedMacro(name)
-    call s:lazyInitNamedMacros()
+    call s:lazyInitNamedMacrosDir()
 
     let macInfo = get(s:namedMacroCache, a:name, v:null)
     let filePath = s:getMacroPathFromName(a:name)

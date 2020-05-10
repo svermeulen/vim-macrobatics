@@ -74,7 +74,7 @@ MOVING REGISTERS                                *macrobatics-moving-registers*
 
 In some cases you might find yourself making use of multiple macros at once.  In this case, it is cumbersome to need to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your '.vimrc':
 
-    nmap gs <plug>(Mac_StoreCurrent)
+    nmap gs <plug>(Mac_CopyCurrentMacroToRegister)
 
 Then, the next time you want to give a name to the active macro, you can execute '"xgs' where 'x' is the register you want to associate with the active macro.  You can then record some number of new macros by executing 'gr', while also having access to the 'x' macro (which you can replay by executing '"xgp').
 
