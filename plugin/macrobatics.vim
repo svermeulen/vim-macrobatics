@@ -7,8 +7,8 @@ let g:Mac_Initialized = 1
 nnoremap <plug>(Mac_Play) :<c-u>call macrobatics#play(v:register, v:count)<cr>
 nnoremap <expr> <plug>(Mac_RecordNew) macrobatics#recordNew(v:register)
 
-nnoremap <expr> <plug>(Mac_Append) macrobatics#append(v:register, v:count)
-nnoremap <expr> <plug>(Mac_Prepend) macrobatics#prepend(v:register, v:count)
+nnoremap <plug>(Mac_Append) :<c-u>call macrobatics#append(v:register, v:count)<cr>
+nnoremap <plug>(Mac_Prepend) :<c-u>call macrobatics#prepend(v:register, v:count)<cr>
 
 nnoremap <plug>(Mac_StoreCurrent) :<c-u>call macrobatics#storeCurrent(v:count, v:register)<cr>
 

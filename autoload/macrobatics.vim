@@ -196,8 +196,8 @@ function! macrobatics#append(reg, cnt)
 
     call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
-    call feedkeys("q" . recordReg, 'nt')
-    return "@" . recordReg
+    call feedkeys("q" . recordReg, 'n')
+    call feedkeys("@" . recordReg, 'n')
 endfunction
 
 function s:resetPopupMenu()
@@ -221,7 +221,7 @@ function! macrobatics#prepend(reg, cnt)
 
     call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
-    return "q" . recordReg
+    call feedkeys("q" . recordReg, 'n')
 endfunction
 
 function! s:createPlayInfo(reg, cnt)
