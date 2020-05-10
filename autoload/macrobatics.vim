@@ -3,12 +3,16 @@ let s:defaultMacroReg = get(g:, 'Mac_DefaultRegister', 'm')
 let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
+let s:namedMacrosSaveDirectory = get(g:, 'Mac_NamedMacrosDirectory', v:null)
+let s:macroFileExtension = get(g:, 'Mac_NamedMacroFileExtension', '.bin')
+let s:fuzzySearcher =  get(g:, 'Mac_NamedMacroFuzzySearcher', v:null)
+let s:defaultFuzzySearchers = ['clap', 'fzf']
 let s:previousCompleteOpt=v:null
 let s:autoFinishRecordAfterPlay = 0
-
+let s:namedMacroCache = {}
+let s:hasInitializedNamedMacros = 0
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
-
 let s:isRecording = 0
 let s:recordInfo = v:null
 
@@ -66,6 +70,7 @@ function! s:addToHistory(entry)
     let history = macrobatics#getHistory()
 
     if len(history) == 0 || history[0] != a:entry
+        call s:removeFromHistory(a:entry)
         call insert(history, a:entry, 0)
         if len(history) > s:maxItems
             call remove(history, s:maxItems, -1)
@@ -73,8 +78,15 @@ function! s:addToHistory(entry)
     endif
 endfunction
 
+function! macrobatics#displayNamedMacros()
+    echohl WarningMsg | echo "--- Named Macros ---" | echohl None
+    for macro in macrobatics#getNamedMacros()
+        echo  macro
+    endfor
+endfunction
+
 function! macrobatics#displayHistory()
-    echohl WarningMsg | echo "--- Macros ---" | echohl None
+    echohl WarningMsg | echo "--- Macro History ---" | echohl None
     let i = 0
     for macro in macrobatics#getHistory()
         call s:displayMacro(macro, i)
@@ -91,7 +103,121 @@ function! macrobatics#storeCurrent(cnt, reg)
     endif
 
     call setreg(a:reg, content)
-    echo "Stored to '" . a:reg "' register: " . s:formatMacro(content)
+    call s:echo("Stored to '%s' register: %s", a:reg, s:formatMacro(content))
+endfunction
+
+function! s:getMacroPathFromName(name)
+    return printf("%s/%s%s", s:namedMacrosSaveDirectory, a:name, s:macroFileExtension)
+endfunction
+
+function! s:getMacroNameFromPath(filePath)
+    let matchIndex = match(a:filePath, '\v[\\/]\zs[^\\/]*' . s:macroFileExtension . '$')
+    call s:assert(matchIndex != -1)
+    return strpart(a:filePath, matchIndex, len(a:filePath) - matchIndex - len(s:macroFileExtension))
+endfunction
+
+function! macrobatics#getNamedMacros()
+    call s:lazyInitNamedMacros()
+    let macroFilePaths = globpath(s:namedMacrosSaveDirectory, "*" . s:macroFileExtension, 0, 1)
+    return map(macroFilePaths, 's:getMacroNameFromPath(v:val)')
+endfunction
+
+function! s:lazyInitNamedMacros()
+    if !s:hasInitializedNamedMacros
+        let s:hasInitializedNamedMacros = 1
+        call s:assert(!(s:namedMacrosSaveDirectory is v:null),
+            \ "Must set a value for 'g:Mac_NamedMacrosDirectory' in order to use named macros")
+        call mkdir(s:namedMacrosSaveDirectory, 'p')
+    endif
+endfunction
+
+function s:echo(...)
+    echo call('printf', a:000)
+endfunction
+
+function s:echom(...)
+    echom call('printf', a:000)
+endfunction
+
+function! macrobatics#nameCurrentMacro()
+    call s:lazyInitNamedMacros()
+    let name = input('Macro Name:')
+    if len(name) == 0
+        " View this as a cancel
+        return
+    endif
+    " Without this the echo below appears on the same line as input
+    echo "\r"
+    let filePath = s:getMacroPathFromName(name)
+    if filereadable(filePath) && confirm(
+            \ printf("Found existing global macro with name '%s'. Overwrite?", name),
+            \ "&Yes\n&No", 2, "Question") != 1
+        " Any response except yes is viewed as a cancel
+        return
+    endif
+    let macroData = getreg(s:defaultMacroReg)
+    call writefile([macroData], filePath, 'b')
+    call s:echo("Saved macro with name '%s'", name)
+endfunction
+
+function! s:getFuzzySearchMethod()
+    if s:fuzzySearcher is v:null
+        for fuzzyName in s:defaultFuzzySearchers
+            if call("macrobatics#" . fuzzyName . "#isAvailable", [])
+                let s:fuzzySearcher = fuzzyName
+                break
+            endif
+        endfor
+
+        call s:assert(!(s:fuzzySearcher is v:null), 
+            \ "Could not find an available fuzzy searcher for macrobatics! "
+            \ . "This can also be set explicitly with 'Mac_NamedMacroFuzzySearcher'. "
+            \ . "See documentation for details.")
+    endif
+
+    return s:fuzzySearcher
+endfunction
+
+function! macrobatics#searchThenPlayNamedMacro()
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [])
+endfunction
+
+function! macrobatics#searchThenSelectNamedMacro()
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
+endfunction
+
+function! macrobatics#playNamedMacro(name, ...)
+    let cnt = a:0 ? a:1 : 1
+    call macrobatics#selectNamedMacro(a:name)
+    call macrobatics#play(s:defaultMacroReg, cnt)
+endfunction
+
+function s:loadNamedMacroData(filePath)
+    let macroDataList = readfile(a:filePath, 'b')
+    call s:assert(len(macroDataList) == 1)
+    return macroDataList[0]
+endfunction
+
+function! macrobatics#selectNamedMacro(name)
+    call s:lazyInitNamedMacros()
+
+    let macInfo = get(s:namedMacroCache, a:name, v:null)
+    let filePath = s:getMacroPathFromName(a:name)
+    if macInfo is v:null
+        call s:assert(filereadable(filePath),
+            \ "Could not find macro with name '%s'!  Expected to find it at path '%s'",
+            \ a:name, filePath)
+        let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
+        let s:namedMacroCache[a:name] = macInfo
+    else
+        " Auto reload if the file is changed
+        " This would occur when over-writing from the same or different vim instance
+        if macInfo.timestamp != getftime(filePath)
+            let macInfo.data = s:loadNamedMacroData(filePath)
+        endif
+    endif
+
+    call macrobatics#setCurrent(macInfo.data)
 endfunction
 
 function! macrobatics#onVimEnter()
@@ -104,7 +230,7 @@ function! macrobatics#clearHistory()
     let previousSize = len(history)
     call remove(history, 0, -1)
     call s:addToHistory(getreg(s:defaultMacroReg))
-    echo "Cleared macro history of " . previousSize . " entries"
+    call s:echo("Cleared macro history of %s entries", previousSize)
 endfunction
 
 function! macrobatics#rotate(offset)
@@ -139,7 +265,7 @@ function! macrobatics#rotate(offset)
     endwhile
 
     call setreg(s:defaultMacroReg, history[0])
-    echo "Current Macro: " . s:formatMacro(history[0])
+    call s:echo("Current Macro: %s", s:formatMacro(history[0]))
 endfunction
 
 function! s:onRecordingFullyComplete()
@@ -290,8 +416,11 @@ endfunction
 
 function! s:assert(value, ...)
     if !a:value
-        let message = a:0 ? a:1 : 'Assert hit inside vim-macrobatics plugin'
-        throw message
+        if len(a:000) == 0
+            throw 'Assert hit inside vim-macrobatics plugin'
+        else
+            throw call('printf', a:000)
+        endif
     endif
 endfunction
 
