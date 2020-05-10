@@ -219,8 +219,11 @@ function! macrobatics#play(reg, cnt)
 
     let s:macrosInProgress += 1
 
-    call feedkeys(playInfo.cnt . "@" . playInfo.reg, 'n')
-    call feedkeys("\<plug>(Mac__OnPlayMacroCompleted)", 'm')
+    " We need to use 'i' to allow nested macros to work
+    " Also note that using `normal! @` instead of feedkeys
+    " Doesn't work sometimes
+    call feedkeys(playInfo.cnt . "@" . playInfo.reg, 'ni')
+    call feedkeys("\<plug>(Mac__OnPlayMacroCompleted)", 'mi')
 endfunction
 
 function s:assert(value, ...)
