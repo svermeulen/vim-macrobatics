@@ -136,10 +136,17 @@ function! s:onRecordingFullyComplete()
     if !(info.appendContents is v:null)
         let fullContent = fullContent . info.appendContents
     endif
-    call setreg(info.reg, fullContent)
-    call s:addToHistory(fullContent)
-    let s:repeatMacro = s:createPlayInfo(info.reg, 1)
-    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+
+    if fullContent == ''
+        " In this case, reset the macro register and do not add to history
+        " View this as a cancel
+        call setreg(info.reg, info.previousContents)
+    else
+        call setreg(info.reg, fullContent)
+        call s:addToHistory(fullContent)
+        let s:repeatMacro = s:createPlayInfo(info.reg, 1)
+        silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+    endif
 endfunction
 
 function! macrobatics#onRecordingComplete(_)
@@ -151,18 +158,6 @@ function! macrobatics#onRecordingComplete(_)
 
     let info = s:recordInfo
     let info.recordContent = getreg(info.reg)
-
-    if info.recordContent == ''
-        " In this case, reset the macro register and do not add to history
-        " View this as a cancel
-        " If prepending this will also not bother executing the previous macro
-        " If appending, then the macro will already have been executed
-        call setreg(info.reg, info.previousContents)
-        let s:recordInfo = v:null
-        return
-    endif
-    
-
     if !(info.appendContents is v:null)
         call setreg(info.reg, info.appendContents)
         call macrobatics#play(info.reg, 1)
