@@ -17,7 +17,7 @@ nnoremap <plug>(Mac_RotateBack) :<c-u>call macrobatics#rotate(v:count > 0 ? v:co
 nnoremap <plug>(Mac_RotateForward) :<c-u>call macrobatics#rotate(v:count > 0 ? -v:count : -1)<cr>
 
 nnoremap <plug>(Mac_SearchForNamedMacroAndSelect) :<c-u>call macrobatics#searchThenSelectNamedMacro()<cr>
-nnoremap <plug>(Mac_SearchForNamedMacroAndPlay) :<c-u>call macrobatics#searchThenPlayNamedMacro()<cr>
+nnoremap <plug>(Mac_SearchForNamedMacroAndPlay) :<c-u>call macrobatics#searchThenPlayNamedMacro(v:count)<cr>
 
 command! -nargs=0 DisplayMacroHistory call macrobatics#displayHistory()
 command! -nargs=0 DisplayNamedMacros call macrobatics#displayNamedMacros()

@@ -4,17 +4,22 @@ function macrobatics#fzf#isAvailable()
 endfunction
 
 function macrobatics#fzf#selectNamedMacro()
-  call fzf#run({
-      \ 'source': macrobatics#getNamedMacros(),
-      \ 'down': '40%',
-      \ 'sink': function('macrobatics#selectNamedMacro')})
+    call fzf#run({
+        \ 'source': macrobatics#getNamedMacros(),
+        \ 'down': '40%',
+        \ 'sink': function('macrobatics#selectNamedMacro')})
 endfunction
 
-function macrobatics#fzf#playNamedMacro()
-  call fzf#run({
-      \ 'source': macrobatics#getNamedMacros(),
-      \ 'down': '40%',
-      \ 'sink': function('macrobatics#playNamedMacro')})
+function s:fzfPlaySink(name)
+    call macrobatics#playNamedMacro(a:name, s:lastCount)
+endfunction
+
+function macrobatics#fzf#playNamedMacro(cnt)
+    let s:lastCount = a:cnt
+    call fzf#run({
+        \ 'source': macrobatics#getNamedMacros(),
+        \ 'down': '40%',
+        \ 'sink': function('s:fzfPlaySink')})
 endfunction
 
 

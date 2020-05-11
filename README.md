@@ -49,7 +49,11 @@ You can also pass a count to the play command to immediately repeat the macro a 
 
 ## Navigating history
 
-To view the current history of macros, you can execute `:Macros`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).
+To view the current history of macros, you can execute `:DisplayMacroHistory`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).  You might also consider adding a binding for this:
+
+```viml
+nmap <leader>dm :DisplayMacroHistory<cr>
+```
 
 You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:Mac_DefaultRegister`) and the rest are displayed as indexes into the history buffer.
 
@@ -90,12 +94,12 @@ nmap <leader>nm <plug>(Mac_NameCurrentMacro)
 Now, every time you create a new macro that you want to name, you can execute `<leader>nm`, and you will then be prompted to type in a name for it.  Then, to add a mapping for it, you can add the following to your `.vimrc`:
 
 ```viml
-nnoremap <space>tm :call macrobatics#playNamedMacro('foo')<cr>
+nnoremap <leader>tm :call macrobatics#playNamedMacro('foo')<cr>
 ```
 
-Where `foo` is the name that you typed into the prompt, and `<space>tm` is the keys that you want to use for your custom macro.
+Where `foo` is the name that you typed into the prompt, and `<leader>tm` is the keys that you want to use for your custom macro.
 
-## Playing Named Macros Directly
+## Playing/Selecting Named Macros Directly
 
 In many cases, you will have named macros that you don't use enough to justify adding an entirely new key binding.  In these cases, it's helpful to be able to select the named macro by searching through the list of named macros whenever you need it instead.  You can do this by adding the following maps or similar to your `.vimrc`:
 
@@ -107,6 +111,14 @@ nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
 Note that in order for these maps to work, you must either have [fzf.vim](https://github.com/junegunn/fzf.vim) or [vim-clap](https://github.com/liuchengxu/vim-clap) installed.
 
 Now, you can execute `<leader>gp`, then choose the named macro you want to play, then hit enter to play it.  Or, you can execute `<leader>sm` to set the current macro to the chosen named macro.  This latter mapping is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).
+
+## <a id="shada-support"></a>Persistent/Shared History
+
+When `g:Mac_SavePersistently` is set to 1, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+
+You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
+
+Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
 
 ## Configuration
 
@@ -134,14 +146,6 @@ The values are:
 * `g:Mac_NamedMacroFileExtension` - The file extension used for the macro files stored inside directory `g:Mac_NamedMacrosDirectory`
 * `g:Mac_NamedMacroFuzzySearcher` - The type of search to use when selecting or executing named macros.  Currently, valid values are 'clap' (which will use [vim-clap](https://github.com/liuchengxu/vim-clap)) and 'fzf' (which will use [fzf.vim](https://github.com/junegunn/fzf.vim))
 * `g:Mac_NamedMacrosDirectory` - The directory to store the files associated with [named macros](#named-macros)
-
-## <a id="shada-support"></a>Persistent/Shared History
-
-When `g:Mac_SavePersistently` is set to 1, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
-
-You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
-
-Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
 
 # Advanced Topics
 
@@ -199,7 +203,7 @@ Without the `<nowait>` setting here, after hitting `q`, vim will always wait for
         normal [MACRO CONTENTS]
     endfunction
 
-    nnoremap <space>t :<c-u>call <sid>doSomething()<cr>
+    nnoremap <leader>t :<c-u>call <sid>doSomething()<cr>
     ```
 
     However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)

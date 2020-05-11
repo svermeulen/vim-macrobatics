@@ -197,8 +197,9 @@ function! s:getFuzzySearchMethod()
     return s:fuzzySearcher
 endfunction
 
-function! macrobatics#searchThenPlayNamedMacro()
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [])
+function! macrobatics#searchThenPlayNamedMacro(cnt)
+    let cnt = a:cnt > 0 ? a:cnt : 1
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [cnt])
 endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
