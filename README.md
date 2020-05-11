@@ -83,7 +83,7 @@ Then in both cases, the macro will be updated to contain the new change.
 
 The suggested values are `ggp` and `ggr` because they work similarly to `gp` and `gr` (`gp` and `gpp` play immediately, `gr` and `grr` record immediately)
 
-## Named Macros
+## <a id="named-macros"></a>Named Macros
 
 If you find yourself re-using a macro quite often, then you might consider giving it a name, and maybe even adding a direct key mapping for it.  You can do this by first adding the following mapping or similar to your `.vimrc`:
 
@@ -117,7 +117,7 @@ In some cases you might want to just select a named macro rather than playing it
 nmap <leader>sm <plug>(Mac_SearchForNamedMacroAndSelect)
 ```
 
-Then you can execute `<leader>sm` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name after executing the `<leader>nm` keys (or using whichver keys you use for that).
+Then you can execute `<leader>sm` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name as <a href="#named-macros">described above</a>.
 
 ## Re-mapping `q`
 
