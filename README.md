@@ -68,7 +68,7 @@ Then if you execute `[m` or `]m` you should see a preview of the newly selected 
 
 ## Editing Macros
 
-In many cases, after recording a macro, you realize that you would like to tweak it slightly, usually by either adding something to the beginning or adding something to the end.  Macrobatics provides two bindings to make this process very easy.  For example, you could add the following bindings to your `.vimrc`:
+In many cases, after recording a macro, you realize that you would like to tweak it slightly, usually by either inserting something in the beginning or adding something to the end.  Macrobatics provides two bindings to make this process very easy.  For example, you could add the following bindings to your `.vimrc`:
 
 ```viml
 nmap ggp <plug>(Mac_Append)
@@ -101,24 +101,33 @@ Where `foo` is the name that you typed into the prompt, and `<leader>tm` is the 
 
 ## Playing/Selecting Named Macros Directly
 
-In many cases, you will have named macros that you don't use enough to justify adding an entirely new key binding.  In these cases, it's helpful to be able to select the named macro by searching through the list of named macros whenever you need it instead.  You can do this by adding the following maps or similar to your `.vimrc`:
+In many cases, you will have named macros that you don't use enough to justify adding an entirely new key binding.  In these cases, it's helpful to be able to play the named macro by searching through the list of named macros whenever you need it instead.  This is often easier than needing to remember a key binding for something you rarely use.  You can do this by adding the following maps or similar to your `.vimrc`:
 
 ```viml
-nmap <leader>sm <plug>(Mac_SearchForNamedMacroAndSelect)
 nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
 ```
 
-Note that in order for these maps to work, you must either have [fzf.vim](https://github.com/junegunn/fzf.vim) or [vim-clap](https://github.com/liuchengxu/vim-clap) installed.
+Note that in order for these maps to work, you must either have [fzf.vim](https://github.com/junegunn/fzf.vim) or [vim-clap](https://github.com/liuchengxu/vim-clap) installed.  If you would prefer using another fuzzy list plugin, feel free to [create a github issue for it](https://github.com/svermeulen/vim-macrobatics/issues/new).
 
-Now, you can execute `<leader>gp`, then choose the named macro you want to play, then hit enter to play it.  Or, you can execute `<leader>sm` to set the current macro to the chosen named macro.  This latter mapping is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).
+Now, you can execute `<leader>gp`, to directly choose the named macro you want to play!  Note that you can also pass a count to this command.
 
-## <a id="shada-support"></a>Persistent/Shared History
+In some cases you might want to just select a named macro rather than playing it directly.  You can do that as well with the following mapping:
 
-When `g:Mac_SavePersistently` is set to 1, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+```viml
+nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
+```
 
-You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
+Then you can execute `<leader>sm` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name after executing the `<leader>nm` keys (or using whichver keys you use for that).
 
-Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
+## Re-mapping `q`
+
+If you find yourself using this plugin and no longer have a need for Vim's built-in way of recording registers, then you might want to re-use the `q` key for something else.  An easy way to achieve this is to use the `<nowait>` setting when adding a new binding. For example:
+
+```viml
+nnoremap <nowait> q :echo 'my new binding'<cr>
+```
+
+Without the `<nowait>` setting here, after hitting `q`, vim will always wait for another keypress for the built-in macro mapping, even if you add a mapping for `q` by itself.
 
 ## Configuration
 
@@ -149,6 +158,14 @@ The values are:
 
 # Advanced Topics
 
+## <a id="shada-support"></a>Persistent/Shared History
+
+When `g:Mac_SavePersistently` is set to `1`, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+
+You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
+
+Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
+
 ## Moving registers
 
 In some cases you might find yourself making use of multiple macros at once.  In this case, it is cumbersome to need to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
@@ -161,25 +178,23 @@ Then, the next time you want to give a name to the active macro, you can execute
 
 Note that in addition to replaying the `x` macro with `"xgp`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
 
-## Nested macros
-
-In some cases you might want to execute a macro from within another macro.  For example, you might have a macro (stored in register `x`) that applies some change to the word under the cursor, and you might instead want a macro that applies the same change to the first word in the current sentence.  One way to do this would be pre-pend the `x` register with a key to move to the beginning of the sentence.  However, you might not want to modify the `x` macro to achieve this, since it might be useful on its own as well.  So instead you could record a new macro (stored in register `y`) that goes to the beginning of the sentence and then executes the `x` macro by pressing `"xgp`.  This way, you could even edit the `x` macro and have those changes automatically included in the `y` macro as well.
-
-## Re-mapping `q`
-
-If you find yourself using this plugin and no longer have a need for Vim's built-in way of recording registers, then you might want to re-use the `q` key for something else.  An easy way to achieve this is to use the `<nowait>` setting when adding a new binding. For example:
-
-```viml
-nnoremap <nowait> q :echo 'my new binding'<cr>
-```
-
-Without the `<nowait>` setting here, after hitting `q`, vim will always wait for another keypress for the built-in macro mapping, even if you add a mapping for `q` by itself.
+Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
 
 ## FAQ
 
 * ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
 
     The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
+
+
+* ### _The repeat button '.' doesn't work when executed immediately after undo_
+
+    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
+
+
+* ### _Can I execute a macro from within a macro?_
+
+    Yes!  This can be quite useful.  You can do this by either triggering a named macro via a key binding, or by triggering another macro that is stored in a different register than the current macro.
 
 
 * ### _Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?_
@@ -207,7 +222,3 @@ Without the `<nowait>` setting here, after hitting `q`, vim will always wait for
     ```
 
     However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
-
-* ### _The repeat button '.' doesn't work when executed immediately after undo_
-
-    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
