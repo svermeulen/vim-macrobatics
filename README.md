@@ -18,7 +18,7 @@ Macrobatics is a plugin for vim/neovim with the goal of making vim macros easier
 
 Install into vim using your preferred plugin manager (eg. [vim-plug](https://github.com/junegunn/vim-plug)).
 
-Note that in order for macros to be repeatable with the `.` key, you will need to also install [vim-repeat](https://github.com/tpope/vim-repeat).
+Note that in order for macros to be repeatable with the `.` key, you will need to also install [vim-repeat](https://github.com/tpope/vim-repeat) (you might also consider using my fork of vim-repeat instead as discussed <a href="#repeat-bug">here</a>).
 
 Note also that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings below:
 
@@ -177,12 +177,12 @@ Without the `<nowait>` setting here, after hitting `q`, vim will always wait for
 
 ## FAQ
 
-* **How do I select a specific macro from the history after executing `:DisplayMacroHistory`?**
+* ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
 
     The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
 
 
-* **Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?**
+* ### _Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?_
 
     Yes, this approach usually works as well.  Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
 
@@ -207,3 +207,7 @@ Without the `<nowait>` setting here, after hitting `q`, vim will always wait for
     ```
 
     However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
+
+* ### _The repeat button '.' doesn't work when executed immediately after undo_
+
+    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
