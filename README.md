@@ -114,7 +114,7 @@ Now, you can execute `<leader>gp`, to directly choose the named macro you want t
 In some cases you might want to just select a named macro rather than playing it directly.  You can do that as well with the following mapping:
 
 ```viml
-nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
+nmap <leader>sm <plug>(Mac_SearchForNamedMacroAndSelect)
 ```
 
 Then you can execute `<leader>sm` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name after executing the `<leader>nm` keys (or using whichver keys you use for that).
