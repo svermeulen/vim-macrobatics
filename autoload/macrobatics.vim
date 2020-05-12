@@ -93,8 +93,8 @@ function! macrobatics#displayHistory()
     endfor
 endfunction
 
-function! s:getMacroPathFromName(name)
-    return printf("%s/%s%s", s:namedMacrosSaveDirectory, a:name, s:macroFileExtension)
+function! s:getMacroPathFromName(directoryPath, name)
+    return printf("%s/%s%s", a:directoryPath, a:name, s:macroFileExtension)
 endfunction
 
 function! s:getMacroNameFromPath(filePath)
@@ -105,6 +105,9 @@ endfunction
 
 function! macrobatics#getNamedMacros()
     call s:lazyInitNamedMacrosDir()
+    if !isdirectory(s:namedMacrosSaveDirectory)
+        return []
+    endif
     let macroFilePaths = globpath(s:namedMacrosSaveDirectory, "*" . s:macroFileExtension, 0, 1)
     return map(macroFilePaths, 's:getMacroNameFromPath(v:val)')
 endfunction
@@ -137,10 +140,6 @@ function! s:chooseMacroSaveDirectory()
     else
         let saveDir = resolve(expand(saveDir))
     endif
-    if !isdirectory(saveDir)
-        echohl MoreMsg | echom '[macrobatics] Creating named macro directory: '.saveDir | echohl None
-        call mkdir(saveDir, "p", 0755)
-    endif
     return saveDir
 endfunction
 
@@ -167,7 +166,9 @@ function! macrobatics#nameCurrentMacro()
     endif
     " Without this the echo below appears on the same line as input
     echo "\r"
-    let filePath = s:getMacroPathFromName(name)
+    " Ensure directory exists
+    call mkdir(s:namedMacrosSaveDirectory, "p", 0755)
+    let filePath = s:getMacroPathFromName(s:namedMacrosSaveDirectory, name)
     if filereadable(filePath) && confirm(
             \ printf("Found existing global macro with name '%s'. Overwrite?", name),
             \ "&Yes\n&No", 2, "Question") != 1
@@ -222,7 +223,7 @@ function! macrobatics#selectNamedMacro(name)
     call s:lazyInitNamedMacrosDir()
 
     let macInfo = get(s:namedMacroCache, a:name, v:null)
-    let filePath = s:getMacroPathFromName(a:name)
+    let filePath = s:getMacroPathFromName(s:namedMacrosSaveDirectory, a:name)
     if macInfo is v:null
         call s:assert(filereadable(filePath),
             \ "Could not find macro with name '%s'!  Expected to find it at path '%s'",
