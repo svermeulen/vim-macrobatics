@@ -104,12 +104,15 @@ function! s:getMacroNameFromPath(filePath)
 endfunction
 
 function! macrobatics#getNamedMacros()
-    call s:lazyInitNamedMacrosDir()
-    if !isdirectory(s:namedMacrosSaveDirectory)
-        return []
-    endif
-    let macroFilePaths = globpath(s:namedMacrosSaveDirectory, "*" . s:macroFileExtension, 0, 1)
-    return map(macroFilePaths, 's:getMacroNameFromPath(v:val)')
+    let dirs = s:getNamedMacrosDirs()
+    let namesSet = {}
+    for dir in dirs
+        for filePath in globpath(dir, "*" . s:macroFileExtension, 0, 1)
+            let name = s:getMacroNameFromPath(filePath)
+            let namesSet[name] = 1
+        endfor
+    endfor
+    return keys(namesSet)
 endfunction
 
 function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
@@ -125,7 +128,7 @@ function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
 endfunction
 
 " This was copied from coc.nvim
-function! s:chooseMacroSaveDirectory()
+function! s:chooseGlobalMacroSaveDirectory()
     let saveDir = get(g:, 'Mac_NamedMacrosDirectory', v:null)
     if saveDir is v:null
         if exists('$XDG_CONFIG_HOME')
@@ -143,10 +146,20 @@ function! s:chooseMacroSaveDirectory()
     return saveDir
 endfunction
 
-function! s:lazyInitNamedMacrosDir()
+function! s:getBufferLocalNamedMacrosDirs()
+    return get(b:, 'Mac_NamedMacrosDirectories', [])
+endfunction
+
+function! s:getGlobalNamedMacrosDir()
     if s:namedMacrosSaveDirectory is v:null
-        let s:namedMacrosSaveDirectory = s:chooseMacroSaveDirectory()
+        let s:namedMacrosSaveDirectory = s:chooseGlobalMacroSaveDirectory()
     endif
+    return s:namedMacrosSaveDirectory
+endfunction
+
+function! s:getNamedMacrosDirs()
+    " Place buffer local dirs first so they override global macros
+    return s:getBufferLocalNamedMacrosDirs() + [s:getGlobalNamedMacrosDir()] 
 endfunction
 
 function s:echo(...)
@@ -157,8 +170,7 @@ function s:echom(...)
     echom call('printf', a:000)
 endfunction
 
-function! macrobatics#nameCurrentMacro()
-    call s:lazyInitNamedMacrosDir()
+function! macrobatics#saveCurrentMacroToDirectory(dirPath)
     let name = input('Macro Name:')
     if len(name) == 0
         " View this as a cancel
@@ -167,10 +179,10 @@ function! macrobatics#nameCurrentMacro()
     " Without this the echo below appears on the same line as input
     echo "\r"
     " Ensure directory exists
-    call mkdir(s:namedMacrosSaveDirectory, "p", 0755)
-    let filePath = s:getMacroPathFromName(s:namedMacrosSaveDirectory, name)
+    call mkdir(a:dirPath, "p", 0755)
+    let filePath = s:getMacroPathFromName(a:dirPath, name)
     if filereadable(filePath) && confirm(
-            \ printf("Found existing global macro with name '%s'. Overwrite?", name),
+            \ printf("Found existing macro with name '%s'. Overwrite?", name),
             \ "&Yes\n&No", 2, "Question") != 1
         " Any response except yes is viewed as a cancel
         return
@@ -178,6 +190,10 @@ function! macrobatics#nameCurrentMacro()
     let macroData = getreg(s:defaultMacroReg)
     call writefile([macroData], filePath, 'b')
     call s:echo("Saved macro with name '%s'", name)
+endfunction
+
+function! macrobatics#nameCurrentMacro()
+    call macrobatics#saveCurrentMacroToDirectory(s:getGlobalNamedMacrosDir())
 endfunction
 
 function! s:getFuzzySearchMethod()
@@ -219,21 +235,29 @@ function s:loadNamedMacroData(filePath)
     return macroDataList[0]
 endfunction
 
-function! macrobatics#selectNamedMacro(name)
-    call s:lazyInitNamedMacrosDir()
+function! macrobatics#tryGetFilePathForNameMacro(name)
+    for macroDir in s:getNamedMacrosDirs()
+        let filePath = s:getMacroPathFromName(macroDir, a:name)
+        if filereadable(filePath)
+            return filePath
+        endif
+    endfor
+    return v:null
+endfunction
 
+function! macrobatics#selectNamedMacro(name)
     let macInfo = get(s:namedMacroCache, a:name, v:null)
-    let filePath = s:getMacroPathFromName(s:namedMacrosSaveDirectory, a:name)
+    let filePath = macrobatics#tryGetFilePathForNameMacro(a:name)
+    let isValidFile = !(filePath is v:null) && filereadable(filePath)
     if macInfo is v:null
-        call s:assert(filereadable(filePath),
-            \ "Could not find macro with name '%s'!  Expected to find it at path '%s'",
-            \ a:name, filePath)
+        call s:assert(isValidFile,
+            \ "Could not find macro with name '%s'!", a:name)
         let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
         let s:namedMacroCache[a:name] = macInfo
     else
         " Auto reload if the file is changed
         " This would occur when over-writing from the same or different vim instance
-        if macInfo.timestamp != getftime(filePath)
+        if isValidFile && macInfo.timestamp != getftime(filePath)
             let macInfo.data = s:loadNamedMacroData(filePath)
         endif
     endif
