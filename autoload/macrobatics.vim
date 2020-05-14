@@ -171,6 +171,10 @@ function s:echom(...)
 endfunction
 
 function! macrobatics#saveCurrentMacroToDirectory(dirPath)
+    call s:saveCurrentMacroToDirectory(resolve(expand(dirPath)))
+endfunction
+
+function! s:saveCurrentMacroToDirectory(dirPath)
     let name = input('Macro Name:')
     if len(name) == 0
         " View this as a cancel
@@ -193,7 +197,7 @@ function! macrobatics#saveCurrentMacroToDirectory(dirPath)
 endfunction
 
 function! macrobatics#nameCurrentMacro()
-    call macrobatics#saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
+    call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
 
 function! s:getFuzzySearchMethod()
