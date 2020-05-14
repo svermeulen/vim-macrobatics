@@ -223,7 +223,31 @@ function! macrobatics#searchThenSelectNamedMacro()
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
 endfunction
 
+function s:inputMacroParameters(macroName)
+    let params = get(g:, 'Mac_NamedMacroParameters', {})
+    if !has_key(params, a:macroName)
+        return 1
+    endif
+    
+    for item in items(params[a:macroName])
+        let paramReg = item[0]
+        let paramName = item[1]
+        let value = input(paramName . ": ")
+        if len(value) == 0
+            return 0
+        endif
+        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
+        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
+        call setreg(paramReg, value)
+    endfor
+    return 1
+endfunction
+
 function! macrobatics#playNamedMacro(name, ...)
+    if !s:inputMacroParameters(a:name)
+        call s:echo("Cancelled macro '%s'", a:name)
+        return
+    endif
     let cnt = a:0 ? a:1 : 1
     call macrobatics#selectNamedMacro(a:name)
     call macrobatics#play(s:defaultMacroReg, cnt)
