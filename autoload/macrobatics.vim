@@ -150,7 +150,7 @@ function! s:getBufferLocalNamedMacrosDirs()
     return get(b:, 'Mac_NamedMacrosDirectories', [])
 endfunction
 
-function! s:getGlobalNamedMacrosDir()
+function! macrobatics#getGlobalNamedMacrosDir()
     if s:namedMacrosSaveDirectory is v:null
         let s:namedMacrosSaveDirectory = s:chooseGlobalMacroSaveDirectory()
     endif
@@ -159,7 +159,7 @@ endfunction
 
 function! s:getNamedMacrosDirs()
     " Place buffer local dirs first so they override global macros
-    return s:getBufferLocalNamedMacrosDirs() + [s:getGlobalNamedMacrosDir()] 
+    return s:getBufferLocalNamedMacrosDirs() + [macrobatics#getGlobalNamedMacrosDir()] 
 endfunction
 
 function s:echo(...)
@@ -193,7 +193,7 @@ function! macrobatics#saveCurrentMacroToDirectory(dirPath)
 endfunction
 
 function! macrobatics#nameCurrentMacro()
-    call macrobatics#saveCurrentMacroToDirectory(s:getGlobalNamedMacrosDir())
+    call macrobatics#saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
 
 function! s:getFuzzySearchMethod()
