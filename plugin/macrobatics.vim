@@ -13,6 +13,7 @@ nnoremap <plug>(Mac_Prepend) :<c-u>call macrobatics#prepend(v:register, v:count)
 nnoremap <plug>(Mac_CopyCurrentMacroToRegister) :<c-u>call macrobatics#copyCurrentMacroToRegister(v:count, v:register)<cr>
 
 nnoremap <plug>(Mac_NameCurrentMacro) :<c-u>call macrobatics#nameCurrentMacro()<cr>
+nnoremap <plug>(Mac_NameCurrentMacroForFileType) :<c-u>call macrobatics#nameCurrentMacroForFileType()<cr>
 
 nnoremap <plug>(Mac_RotateBack) :<c-u>call macrobatics#rotate(v:count > 0 ? v:count : 1)<cr>
 nnoremap <plug>(Mac_RotateForward) :<c-u>call macrobatics#rotate(v:count > 0 ? -v:count : -1)<cr>

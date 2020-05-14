@@ -5,7 +5,7 @@ let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 let s:macroFileExtension = get(g:, 'Mac_NamedMacroFileExtension', '.bin')
 let s:fuzzySearcher =  get(g:, 'Mac_NamedMacroFuzzySearcher', v:null)
-let s:namedMacrosSaveDirectory = v:null
+let s:globalNamedMacrosSaveDirectory = v:null
 let s:defaultFuzzySearchers = ['clap', 'fzf']
 let s:previousCompleteOpt=v:null
 let s:autoFinishRecordAfterPlay = 0
@@ -93,8 +93,8 @@ function! macrobatics#displayHistory()
     endfor
 endfunction
 
-function! s:getMacroPathFromName(directoryPath, name)
-    return printf("%s/%s%s", a:directoryPath, a:name, s:macroFileExtension)
+function! s:constructMacroPath(directoryPath, name)
+    return a:directoryPath . '/' . a:name . s:macroFileExtension
 endfunction
 
 function! s:getMacroNameFromPath(filePath)
@@ -146,10 +146,13 @@ function! s:chooseGlobalMacroSaveDirectory()
     return saveDir
 endfunction
 
+function s:getCurrentFileTypes()
+    return split(&ft, '\.')
+endfunction
+
 function! s:getFileTypeNamedMacrosDirs()
-    let fileTypes = split(&ft, '\.')
     let dirs = []
-    for ft in fileTypes
+    for ft in s:getCurrentFileTypes()
         call add(dirs, macrobatics#getGlobalNamedMacrosDir() . "/filetype/" . ft)
     endfor
     return dirs
@@ -160,10 +163,10 @@ function! s:getBufferLocalNamedMacrosDirs()
 endfunction
 
 function! macrobatics#getGlobalNamedMacrosDir()
-    if s:namedMacrosSaveDirectory is v:null
-        let s:namedMacrosSaveDirectory = s:chooseGlobalMacroSaveDirectory()
+    if s:globalNamedMacrosSaveDirectory is v:null
+        let s:globalNamedMacrosSaveDirectory = s:chooseGlobalMacroSaveDirectory()
     endif
-    return s:namedMacrosSaveDirectory
+    return s:globalNamedMacrosSaveDirectory
 endfunction
 
 function! s:getNamedMacrosDirs()
@@ -179,10 +182,6 @@ function s:echom(...)
     echom call('printf', a:000)
 endfunction
 
-function! macrobatics#saveCurrentMacroToDirectory(dirPath)
-    call s:saveCurrentMacroToDirectory(resolve(expand(a:dirPath)))
-endfunction
-
 function! s:saveCurrentMacroToDirectory(dirPath)
     let name = input('Macro Name:')
     if len(name) == 0
@@ -193,7 +192,7 @@ function! s:saveCurrentMacroToDirectory(dirPath)
     echo "\r"
     " Ensure directory exists
     call mkdir(a:dirPath, "p", 0755)
-    let filePath = s:getMacroPathFromName(a:dirPath, name)
+    let filePath = s:constructMacroPath(a:dirPath, name)
     if filereadable(filePath) && confirm(
             \ printf("Found existing macro with name '%s'. Overwrite?", name),
             \ "&Yes\n&No", 2, "Question") != 1
@@ -203,6 +202,15 @@ function! s:saveCurrentMacroToDirectory(dirPath)
     let macroData = getreg(s:defaultMacroReg)
     call writefile([macroData], filePath, 'b')
     call s:echo("Saved macro with name '%s'", name)
+endfunction
+
+function! macrobatics#saveCurrentMacroToDirectory(dirPath)
+    call s:saveCurrentMacroToDirectory(resolve(expand(a:dirPath)))
+endfunction
+
+function! macrobatics#nameCurrentMacroForFileType()
+    let saveDir = s:getFileTypeNamedMacrosDirs()[0]
+    call s:saveCurrentMacroToDirectory(saveDir)
 endfunction
 
 function! macrobatics#nameCurrentMacro()
@@ -236,13 +244,27 @@ function! macrobatics#searchThenSelectNamedMacro()
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
 endfunction
 
-function s:inputMacroParameters(macroName)
-    let params = get(g:, 'Mac_NamedMacroParameters', {})
-    if !has_key(params, a:macroName)
-        return 1
+function s:getMacroParametersInfo(name)
+    let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
+    if has_key(bufferLocalMap, a:name)
+        return bufferLocalMap[a:name]
     endif
-    
-    for item in items(params[a:macroName])
+
+    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersFileType', {})
+    for fileType in s:getCurrentFileTypes()
+        let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
+        if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)
+            return fileTypeParamMap[a:name]
+        endif
+    endfor
+
+    let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
+    return get(globalMap, a:name, [])
+endfunction
+
+function s:inputMacroParameters(name)
+    let params = s:getMacroParametersInfo(a:name)
+    for item in items(params)
         let paramReg = item[0]
         let paramName = item[1]
         let value = input(paramName . ": ")
@@ -272,33 +294,42 @@ function s:loadNamedMacroData(filePath)
     return macroDataList[0]
 endfunction
 
-function! macrobatics#tryGetFilePathForNameMacro(name)
+function s:findNamedMacroDir(name)
     for macroDir in s:getNamedMacrosDirs()
-        let filePath = s:getMacroPathFromName(macroDir, a:name)
+        let filePath = s:constructMacroPath(macroDir, a:name)
         if filereadable(filePath)
-            return filePath
+            return macroDir
         endif
     endfor
     return v:null
 endfunction
 
+function! s:getMacroCacheForDir(dirPath)
+    let cache = get(s:namedMacroCache, a:dirPath, v:null)
+    if cache is v:null
+        let cache = {}
+        let s:namedMacroCache[a:dirPath] = cache
+    endif
+    return cache
+endfunction
+
 function! macrobatics#selectNamedMacro(name)
-    let macInfo = get(s:namedMacroCache, a:name, v:null)
-    let filePath = macrobatics#tryGetFilePathForNameMacro(a:name)
-    let isValidFile = !(filePath is v:null) && filereadable(filePath)
+    let macroDir = s:findNamedMacroDir(a:name)
+    let filePath = s:constructMacroPath(macroDir, a:name)
+    let cache = s:getMacroCacheForDir()
+    let macInfo = get(cache, a:name, v:null)
     if macInfo is v:null
-        call s:assert(isValidFile,
+        call s:assert(filereadable(filePath),
             \ "Could not find macro with name '%s'!", a:name)
         let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
-        let s:namedMacroCache[a:name] = macInfo
+        let cache[a:name] = macInfo
     else
         " Auto reload if the file is changed
         " This would occur when over-writing from the same or different vim instance
-        if isValidFile && macInfo.timestamp != getftime(filePath)
+        if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
             let macInfo.data = s:loadNamedMacroData(filePath)
         endif
     endif
-
     call macrobatics#setCurrent(macInfo.data)
 endfunction
 
