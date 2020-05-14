@@ -146,6 +146,15 @@ function! s:chooseGlobalMacroSaveDirectory()
     return saveDir
 endfunction
 
+function! s:getFileTypeNamedMacrosDirs()
+    let fileTypes = split(&ft, '\.')
+    let dirs = []
+    for ft in fileTypes
+        call add(dirs, macrobatics#getGlobalNamedMacrosDir() . "/filetype/" . ft)
+    endfor
+    return dirs
+endfunction
+
 function! s:getBufferLocalNamedMacrosDirs()
     return get(b:, 'Mac_NamedMacrosDirectories', [])
 endfunction
@@ -159,7 +168,7 @@ endfunction
 
 function! s:getNamedMacrosDirs()
     " Place buffer local dirs first so they override global macros
-    return s:getBufferLocalNamedMacrosDirs() + [macrobatics#getGlobalNamedMacrosDir()] 
+    return s:getBufferLocalNamedMacrosDirs() + s:getFileTypeNamedMacrosDirs() + [macrobatics#getGlobalNamedMacrosDir()] 
 endfunction
 
 function s:echo(...)
