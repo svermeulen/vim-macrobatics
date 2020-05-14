@@ -202,6 +202,29 @@ Note that in addition to replaying the `x` macro with `"xgp`, you can also re-re
 
 Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
 
+## Buffer Local Macros
+
+In some cases you will be making macros that only apply to certain file types, or possibly certain projects.  In these cases, you don't need these macros listed when in other contexts.
+
+For example, if you wanted to add support for storing/playing macros on a per-file-type basis, you could add the following to your `.vimrc`:
+
+```viml
+" nmg = name macro global
+nmap <leader>nmg <plug>(Mac_NameCurrentMacro)
+" nmf = name macro file type
+nmap <leader>nmf :call macrobatics#saveCurrentMacroToDirectory('~/.config/macrobatics/filetype/' . &ft)<cr>
+```
+
+Note that unlike normal named macros, for buffer-local macros you need to explicitly supply the directory to save the macro to.  Also note that in the above vimscript that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>nm` to `<leader>nmg`.
+
+Now, when we record a named macro that is file-type-specific, we can execute `<leader>nmf` and it will save to a file-type specific directory.
+
+To have the file type specific macros available to use, we also need to set a value for `b:Mac_NamedMacrosDirectories`, which we could do by adding the following to your `.vimrc`:
+
+```viml
+TBD
+```
+
 ## FAQ
 
 * ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
