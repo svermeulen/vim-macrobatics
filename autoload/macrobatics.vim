@@ -51,32 +51,6 @@ function! macrobatics#setCurrent(entry)
     call s:addToHistory(a:entry)
 endfunction
 
-function! s:removeFromHistory(entry)
-    let history = macrobatics#getHistory()
-
-    let i = 0
-    for candidate in history
-        if candidate == a:entry
-            call remove(history, i)
-            return 1
-        endif
-        let i += 1
-    endfor
-    return 0
-endfunction
-
-function! s:addToHistory(entry)
-    let history = macrobatics#getHistory()
-
-    if len(history) == 0 || history[0] != a:entry
-        call s:removeFromHistory(a:entry)
-        call insert(history, a:entry, 0)
-        if len(history) > s:maxItems
-            call remove(history, s:maxItems, -1)
-        endif
-    endif
-endfunction
-
 function! macrobatics#displayNamedMacros()
     echohl WarningMsg | echo "--- Named Macros ---" | echohl None
     for macro in macrobatics#getNamedMacros()
@@ -91,16 +65,6 @@ function! macrobatics#displayHistory()
         call s:displayMacro(macro, i)
         let i += 1
     endfor
-endfunction
-
-function! s:constructMacroPath(directoryPath, name)
-    return a:directoryPath . '/' . a:name . s:macroFileExtension
-endfunction
-
-function! s:getMacroNameFromPath(filePath)
-    let matchIndex = match(a:filePath, '\v[\\/]\zs[^\\/]*' . s:macroFileExtension . '$')
-    call s:assert(matchIndex != -1)
-    return strpart(a:filePath, matchIndex, len(a:filePath) - matchIndex - len(s:macroFileExtension))
 endfunction
 
 function! macrobatics#getNamedMacros()
@@ -127,81 +91,11 @@ function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
     call s:echo("Stored to '%s' register: %s", a:reg, s:formatMacro(content))
 endfunction
 
-" This was copied from coc.nvim
-function! s:chooseGlobalMacroSaveDirectory()
-    let saveDir = get(g:, 'Mac_NamedMacrosDirectory', v:null)
-    if saveDir is v:null
-        if exists('$XDG_CONFIG_HOME')
-          let saveDir = resolve($XDG_CONFIG_HOME."/macrobatics")
-        else
-          if has('win32') || has('win64')
-            let saveDir = resolve(expand('~/AppData/Local/macrobatics'))
-          else
-            let saveDir = resolve(expand('~/.config/macrobatics'))
-          endif
-        endif
-    else
-        let saveDir = resolve(expand(saveDir))
-    endif
-    return saveDir
-endfunction
-
-function s:getCurrentFileTypes()
-    return split(&ft, '\.')
-endfunction
-
-function! s:getFileTypeNamedMacrosDirs()
-    let dirs = []
-    for ft in s:getCurrentFileTypes()
-        call add(dirs, macrobatics#getGlobalNamedMacrosDir() . "/filetype/" . ft)
-    endfor
-    return dirs
-endfunction
-
-function! s:getBufferLocalNamedMacrosDirs()
-    return get(b:, 'Mac_NamedMacrosDirectories', [])
-endfunction
-
 function! macrobatics#getGlobalNamedMacrosDir()
     if s:globalNamedMacrosSaveDirectory is v:null
         let s:globalNamedMacrosSaveDirectory = s:chooseGlobalMacroSaveDirectory()
     endif
     return s:globalNamedMacrosSaveDirectory
-endfunction
-
-function! s:getNamedMacrosDirs()
-    " Place buffer local dirs first so they override global macros
-    return s:getBufferLocalNamedMacrosDirs() + s:getFileTypeNamedMacrosDirs() + [macrobatics#getGlobalNamedMacrosDir()] 
-endfunction
-
-function s:echo(...)
-    echo call('printf', a:000)
-endfunction
-
-function s:echom(...)
-    echom call('printf', a:000)
-endfunction
-
-function! s:saveCurrentMacroToDirectory(dirPath)
-    let name = input('Macro Name:')
-    if len(name) == 0
-        " View this as a cancel
-        return
-    endif
-    " Without this the echo below appears on the same line as input
-    echo "\r"
-    " Ensure directory exists
-    call mkdir(a:dirPath, "p", 0755)
-    let filePath = s:constructMacroPath(a:dirPath, name)
-    if filereadable(filePath) && confirm(
-            \ printf("Found existing macro with name '%s'. Overwrite?", name),
-            \ "&Yes\n&No", 2, "Question") != 1
-        " Any response except yes is viewed as a cancel
-        return
-    endif
-    let macroData = getreg(s:defaultMacroReg)
-    call writefile([macroData], filePath, 'b')
-    call s:echo("Saved macro with name '%s'", name)
 endfunction
 
 function! macrobatics#saveCurrentMacroToDirectory(dirPath)
@@ -217,24 +111,6 @@ function! macrobatics#nameCurrentMacro()
     call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
 
-function! s:getFuzzySearchMethod()
-    if s:fuzzySearcher is v:null
-        for fuzzyName in s:defaultFuzzySearchers
-            if call("macrobatics#" . fuzzyName . "#isAvailable", [])
-                let s:fuzzySearcher = fuzzyName
-                break
-            endif
-        endfor
-
-        call s:assert(!(s:fuzzySearcher is v:null), 
-            \ "Could not find an available fuzzy searcher for macrobatics! "
-            \ . "This can also be set explicitly with 'Mac_NamedMacroFuzzySearcher'. "
-            \ . "See documentation for details.")
-    endif
-
-    return s:fuzzySearcher
-endfunction
-
 function! macrobatics#searchThenPlayNamedMacro(cnt)
     let cnt = a:cnt > 0 ? a:cnt : 1
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [cnt])
@@ -242,40 +118,6 @@ endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
-endfunction
-
-function s:getMacroParametersInfo(name)
-    let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
-    if has_key(bufferLocalMap, a:name)
-        return bufferLocalMap[a:name]
-    endif
-
-    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersFileType', {})
-    for fileType in s:getCurrentFileTypes()
-        let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
-        if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)
-            return fileTypeParamMap[a:name]
-        endif
-    endfor
-
-    let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
-    return get(globalMap, a:name, [])
-endfunction
-
-function s:inputMacroParameters(name)
-    let params = s:getMacroParametersInfo(a:name)
-    for item in items(params)
-        let paramReg = item[0]
-        let paramName = item[1]
-        let value = input(paramName . ": ")
-        if len(value) == 0
-            return 0
-        endif
-        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
-        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
-        call setreg(paramReg, value)
-    endfor
-    return 1
 endfunction
 
 function! macrobatics#playNamedMacro(name, ...)
@@ -288,35 +130,10 @@ function! macrobatics#playNamedMacro(name, ...)
     call macrobatics#play(s:defaultMacroReg, cnt)
 endfunction
 
-function s:loadNamedMacroData(filePath)
-    let macroDataList = readfile(a:filePath, 'b')
-    call s:assert(len(macroDataList) == 1)
-    return macroDataList[0]
-endfunction
-
-function s:findNamedMacroDir(name)
-    for macroDir in s:getNamedMacrosDirs()
-        let filePath = s:constructMacroPath(macroDir, a:name)
-        if filereadable(filePath)
-            return macroDir
-        endif
-    endfor
-    return v:null
-endfunction
-
-function! s:getMacroCacheForDir(dirPath)
-    let cache = get(s:namedMacroCache, a:dirPath, v:null)
-    if cache is v:null
-        let cache = {}
-        let s:namedMacroCache[a:dirPath] = cache
-    endif
-    return cache
-endfunction
-
 function! macrobatics#selectNamedMacro(name)
     let macroDir = s:findNamedMacroDir(a:name)
     let filePath = s:constructMacroPath(macroDir, a:name)
-    let cache = s:getMacroCacheForDir()
+    let cache = s:getMacroCacheForDir(macroDir)
     let macInfo = get(cache, a:name, v:null)
     if macInfo is v:null
         call s:assert(filereadable(filePath),
@@ -381,43 +198,6 @@ function! macrobatics#rotate(offset)
     call s:echo("Current Macro: %s", s:formatMacro(history[0]))
 endfunction
 
-function! s:onRecordingFullyComplete()
-    call s:resetPopupMenu()
-    let info = s:recordInfo
-    let s:recordInfo = v:null
-    let fullContent = info.recordContent
-    if !(info.prependContents is v:null)
-        let fullContent = info.prependContents . fullContent
-    endif
-    if !(info.appendContents is v:null)
-        let fullContent = fullContent . info.appendContents
-    endif
-    if fullContent == ''
-        " In this case, reset the macro register and do not add to history
-        " View this as a cancel
-        call setreg(info.reg, info.previousContents)
-    else
-        call setreg(info.reg, fullContent)
-        if !(info.prependContents is v:null) || !(info.appendContents is v:null)
-            call s:removeFromHistory(info.previousContents)
-        endif
-        call s:addToHistory(fullContent)
-        let s:repeatMacro = s:createPlayInfo(info.reg, 1)
-        call s:markForRepeat()
-    endif
-endfunction
-
-function! s:markForRepeat()
-    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
-    " Force disable the logic in vim-repeat that waits for CursorMove
-    " This cause a bug where if you make a change immediately after recording a macro
-    " and then attempt to repeat that change it will repeat the macro instead
-    " Not sure why this logic is necessary in vim-repeat
-    augroup repeat_custom_motion
-        autocmd!
-    augroup END
-endfunction
-
 function! macrobatics#onRecordingComplete(_)
 
     if (s:recordInfo is v:null)
@@ -473,17 +253,6 @@ function! macrobatics#append(reg, cnt)
     call feedkeys("q" . recordReg, 'ni')
 endfunction
 
-function! s:resetPopupMenu()
-    call s:assert(s:previousCompleteOpt != v:null)
-    exec "set completeopt=" . s:previousCompleteOpt 
-    let s:previousCompleteOpt=v:null
-endfunction
-
-function! s:temporarilyDisablePopupMenu()
-    let s:previousCompleteOpt=&completeopt
-    set completeopt=noselect
-endfunction
-
 function! macrobatics#prepend(reg, cnt)
     call s:assert(!s:isRecording)
     call s:assert(a:cnt == 0 || a:cnt == 1)
@@ -495,17 +264,6 @@ function! macrobatics#prepend(reg, cnt)
     call s:temporarilyDisablePopupMenu()
     let s:isRecording = 1
     call feedkeys("q" . recordReg, 'n')
-endfunction
-
-function! s:createPlayInfo(reg, cnt)
-    return { 
-        \ 'reg': s:getMacroRegister(a:reg),
-        \ 'cnt': a:cnt > 0 ? a:cnt : 1
-        \ }
-endfunction
-
-function! s:repeatLast()
-    call macrobatics#play(s:repeatMacro.reg, s:repeatMacro.cnt)
 endfunction
 
 function! macrobatics#play(reg, cnt)
@@ -596,3 +354,244 @@ function! s:setRecordInfo(reg, prependContents, appendContents)
     let s:recordInfo = {'reg': a:reg, 'prependContents': a:prependContents, 'appendContents': a:appendContents, 'previousContents': getreg(a:reg)}
 endfunction
 
+function! s:removeFromHistory(entry)
+    let history = macrobatics#getHistory()
+
+    let i = 0
+    for candidate in history
+        if candidate == a:entry
+            call remove(history, i)
+            return 1
+        endif
+        let i += 1
+    endfor
+    return 0
+endfunction
+
+function! s:addToHistory(entry)
+    let history = macrobatics#getHistory()
+
+    if len(history) == 0 || history[0] != a:entry
+        call s:removeFromHistory(a:entry)
+        call insert(history, a:entry, 0)
+        if len(history) > s:maxItems
+            call remove(history, s:maxItems, -1)
+        endif
+    endif
+endfunction
+
+function! s:constructMacroPath(directoryPath, name)
+    return a:directoryPath . '/' . a:name . s:macroFileExtension
+endfunction
+
+function! s:getMacroNameFromPath(filePath)
+    let matchIndex = match(a:filePath, '\v[\\/]\zs[^\\/]*' . s:macroFileExtension . '$')
+    call s:assert(matchIndex != -1)
+    return strpart(a:filePath, matchIndex, len(a:filePath) - matchIndex - len(s:macroFileExtension))
+endfunction
+
+" This was copied from coc.nvim
+function! s:chooseGlobalMacroSaveDirectory()
+    let saveDir = get(g:, 'Mac_NamedMacrosDirectory', v:null)
+    if saveDir is v:null
+        if exists('$XDG_CONFIG_HOME')
+          let saveDir = resolve($XDG_CONFIG_HOME."/macrobatics")
+        else
+          if has('win32') || has('win64')
+            let saveDir = resolve(expand('~/AppData/Local/macrobatics'))
+          else
+            let saveDir = resolve(expand('~/.config/macrobatics'))
+          endif
+        endif
+    else
+        let saveDir = resolve(expand(saveDir))
+    endif
+    return saveDir
+endfunction
+
+function s:getCurrentFileTypes()
+    return split(&ft, '\.')
+endfunction
+
+function! s:getFileTypeNamedMacrosDirs()
+    let dirs = []
+    for ft in s:getCurrentFileTypes()
+        call add(dirs, macrobatics#getGlobalNamedMacrosDir() . "/filetype/" . ft)
+    endfor
+    return dirs
+endfunction
+
+function! s:getBufferLocalNamedMacrosDirs()
+    return get(b:, 'Mac_NamedMacrosDirectories', [])
+endfunction
+
+function! s:getNamedMacrosDirs()
+    " Place buffer local dirs first so they override global macros
+    return s:getBufferLocalNamedMacrosDirs() + s:getFileTypeNamedMacrosDirs() + [macrobatics#getGlobalNamedMacrosDir()] 
+endfunction
+
+function s:echo(...)
+    echo call('printf', a:000)
+endfunction
+
+function s:echom(...)
+    echom call('printf', a:000)
+endfunction
+
+function! s:saveCurrentMacroToDirectory(dirPath)
+    let name = input('Macro Name:')
+    if len(name) == 0
+        " View this as a cancel
+        return
+    endif
+    " Without this the echo below appears on the same line as input
+    echo "\r"
+    " Ensure directory exists
+    call mkdir(a:dirPath, "p", 0755)
+    let filePath = s:constructMacroPath(a:dirPath, name)
+    if filereadable(filePath) && confirm(
+            \ printf("Found existing macro with name '%s'. Overwrite?", name),
+            \ "&Yes\n&No", 2, "Question") != 1
+        " Any response except yes is viewed as a cancel
+        return
+    endif
+    let macroData = getreg(s:defaultMacroReg)
+    call writefile([macroData], filePath, 'b')
+    call s:echo("Saved macro with name '%s'", name)
+endfunction
+
+function! s:getFuzzySearchMethod()
+    if s:fuzzySearcher is v:null
+        for fuzzyName in s:defaultFuzzySearchers
+            if call("macrobatics#" . fuzzyName . "#isAvailable", [])
+                let s:fuzzySearcher = fuzzyName
+                break
+            endif
+        endfor
+
+        call s:assert(!(s:fuzzySearcher is v:null), 
+            \ "Could not find an available fuzzy searcher for macrobatics! "
+            \ . "This can also be set explicitly with 'Mac_NamedMacroFuzzySearcher'. "
+            \ . "See documentation for details.")
+    endif
+
+    return s:fuzzySearcher
+endfunction
+
+function s:getMacroParametersInfo(name)
+    let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
+    if has_key(bufferLocalMap, a:name)
+        return bufferLocalMap[a:name]
+    endif
+
+    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersFileType', {})
+    for fileType in s:getCurrentFileTypes()
+        let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
+        if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)
+            return fileTypeParamMap[a:name]
+        endif
+    endfor
+
+    let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
+    return get(globalMap, a:name, {})
+endfunction
+
+function s:inputMacroParameters(name)
+    let params = s:getMacroParametersInfo(a:name)
+    for item in items(params)
+        let paramReg = item[0]
+        let paramName = item[1]
+        let value = input(paramName . ": ")
+        if len(value) == 0
+            return 0
+        endif
+        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
+        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
+        call setreg(paramReg, value)
+    endfor
+    return 1
+endfunction
+
+function s:loadNamedMacroData(filePath)
+    let macroDataList = readfile(a:filePath, 'b')
+    call s:assert(len(macroDataList) == 1)
+    return macroDataList[0]
+endfunction
+
+function s:findNamedMacroDir(name)
+    for macroDir in s:getNamedMacrosDirs()
+        let filePath = s:constructMacroPath(macroDir, a:name)
+        if filereadable(filePath)
+            return macroDir
+        endif
+    endfor
+    return v:null
+endfunction
+
+function! s:getMacroCacheForDir(dirPath)
+    let cache = get(s:namedMacroCache, a:dirPath, v:null)
+    if cache is v:null
+        let cache = {}
+        let s:namedMacroCache[a:dirPath] = cache
+    endif
+    return cache
+endfunction
+
+function! s:onRecordingFullyComplete()
+    call s:resetPopupMenu()
+    let info = s:recordInfo
+    let s:recordInfo = v:null
+    let fullContent = info.recordContent
+    if !(info.prependContents is v:null)
+        let fullContent = info.prependContents . fullContent
+    endif
+    if !(info.appendContents is v:null)
+        let fullContent = fullContent . info.appendContents
+    endif
+    if fullContent == ''
+        " In this case, reset the macro register and do not add to history
+        " View this as a cancel
+        call setreg(info.reg, info.previousContents)
+    else
+        call setreg(info.reg, fullContent)
+        if !(info.prependContents is v:null) || !(info.appendContents is v:null)
+            call s:removeFromHistory(info.previousContents)
+        endif
+        call s:addToHistory(fullContent)
+        let s:repeatMacro = s:createPlayInfo(info.reg, 1)
+        call s:markForRepeat()
+    endif
+endfunction
+
+function! s:markForRepeat()
+    silent! call repeat#set("\<plug>(Mac__RepeatLast)")
+    " Force disable the logic in vim-repeat that waits for CursorMove
+    " This cause a bug where if you make a change immediately after recording a macro
+    " and then attempt to repeat that change it will repeat the macro instead
+    " Not sure why this logic is necessary in vim-repeat
+    augroup repeat_custom_motion
+        autocmd!
+    augroup END
+endfunction
+
+function! s:resetPopupMenu()
+    call s:assert(s:previousCompleteOpt != v:null)
+    exec "set completeopt=" . s:previousCompleteOpt 
+    let s:previousCompleteOpt=v:null
+endfunction
+
+function! s:temporarilyDisablePopupMenu()
+    let s:previousCompleteOpt=&completeopt
+    set completeopt=noselect
+endfunction
+
+function! s:createPlayInfo(reg, cnt)
+    return { 
+        \ 'reg': s:getMacroRegister(a:reg),
+        \ 'cnt': a:cnt > 0 ? a:cnt : 1
+        \ }
+endfunction
+
+function! s:repeatLast()
+    call macrobatics#play(s:repeatMacro.reg, s:repeatMacro.cnt)
+endfunction
