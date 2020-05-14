@@ -204,7 +204,7 @@ Note also that you might consider [naming the current macro](#named-macros) inst
 
 ## Buffer Local Macros
 
-In some cases you will be making macros that only apply to certain file types, or possibly certain projects.  In these cases, you don't need these macros listed when in other contexts.
+In some cases you will be making macros that only apply to certain file types, or possibly certain projects.  In these cases, you don't need these macros listed when in other file types / projects.
 
 For example, if you wanted to add support for storing/playing macros on a per-file-type basis, you could add the following to your `.vimrc`:
 
@@ -222,8 +222,13 @@ Now, when we record a named macro that is file-type-specific, we can execute `<l
 To have the file type specific macros available to use, we also need to set a value for `b:Mac_NamedMacrosDirectories`, which we could do by adding the following to your `.vimrc`:
 
 ```viml
-TBD
+augroup FileTypeMacrobatics
+    autocmd!
+    autocmd FileType * let b:Mac_NamedMacrosDirectories = ['~/.config/macrobatics/filetype/' . expand('<amatch>')]
+augroup END
 ```
+
+Now, when we execute `<leader>sm` or `<leader>gp` (assuming default mappings) then we will get both the global list of macros as well as any file-type specific macros.
 
 ## FAQ
 
