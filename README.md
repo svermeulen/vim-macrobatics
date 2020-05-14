@@ -12,6 +12,7 @@ Macrobatics is a plugin for vim/neovim with the goal of making vim macros easier
 * Supports editting existing macros by appending or prepending content to it.
 * Supports nested macros (create macros that play other macros).
 * Supports giving macros a name and then saving them persistently
+* Supports parameterized macros
 * Written in pure vim-script.
 
 ## Installation
@@ -143,6 +144,7 @@ let g:Mac_NamedMacroFuzzySearcher = v:null
 let g:Mac_NamedMacrosDirectory = "~/.config/macrobatics"
 " Note that for windows, the default is actually this:
 " let g:Mac_NamedMacrosDirectory = "~/AppData/Local/macrobatics"
+let g:Mac_NamedMacroParameters = {}
 ```
 
 Note that including these lines in your `.vimrc` will have zero effect, because these are already the default values.  So you'll only need to include the lines which you customize.
@@ -155,8 +157,28 @@ The values are:
 * `g:Mac_NamedMacroFileExtension` - The file extension used for the macro files stored inside directory `g:Mac_NamedMacrosDirectory`
 * `g:Mac_NamedMacroFuzzySearcher` - The type of search to use when selecting or executing named macros.  Currently, valid values are 'clap' (which will use [vim-clap](https://github.com/liuchengxu/vim-clap)) and 'fzf' (which will use [fzf.vim](https://github.com/junegunn/fzf.vim))
 * `g:Mac_NamedMacrosDirectory` - The directory to store the files associated with [named macros](#named-macros)
+* `g:Mac_NamedMacroParameters` - The list of [named parameters](#parameterized-macros) associated with any macros that you want to be parameterized.
 
 # Advanced Topics
+
+## Parameterized Macros
+
+Macrobatics also has built in support for using named parameters with your named macros.  How this works is that when recording the macro initially, you make use of certain register values, then when re-playing the macro, macrobatics will prompt the user to fill in a value for these registers.
+
+For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you need the user to supply the new name for the method.  You can do this by doing the following:
+
+* Fill in a value for the 'a' register that will represent the new name for the method (eg. by executing `"ayiw`)
+* Record the macro, making use of the 'a' register to replace the current method name
+* Name the current macro 'rename-current-method'.  It is now stored persistently into the macros folder.
+* Add the following to your `.vimrc`:
+    ```viml
+    let g:Mac_NamedMacroParameters = {
+        \ 'rename-current-method': { 'a': 'New Name' }
+        \ }
+    ```
+* Restart vim, or re-source your `.vimrc`
+* Play the 'rename-current-method' macro
+* You should then be prompted for a "New Name" value.  The 'a' register will then be set to whatever you type here, and then the macro will be executed.
 
 ## <a id="shada-support"></a>Persistent/Shared History
 
