@@ -171,7 +171,7 @@ function s:echom(...)
 endfunction
 
 function! macrobatics#saveCurrentMacroToDirectory(dirPath)
-    call s:saveCurrentMacroToDirectory(resolve(expand(dirPath)))
+    call s:saveCurrentMacroToDirectory(resolve(expand(a:dirPath)))
 endfunction
 
 function! s:saveCurrentMacroToDirectory(dirPath)
