@@ -484,7 +484,7 @@ function s:getMacroParametersInfo(name)
         return bufferLocalMap[a:name]
     endif
 
-    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersFileType', {})
+    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersByFileType', {})
     for fileType in s:getCurrentFileTypes()
         let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
         if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)

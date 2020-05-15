@@ -145,6 +145,7 @@ let g:Mac_NamedMacrosDirectory = "~/.config/macrobatics"
 " Note that for windows, the default is actually this:
 " let g:Mac_NamedMacrosDirectory = "~/AppData/Local/macrobatics"
 let g:Mac_NamedMacroParameters = {}
+let g:Mac_NamedMacroParametersByFileType = {}
 ```
 
 Note that including these lines in your `.vimrc` will have zero effect, because these are already the default values.  So you'll only need to include the lines which you customize.
@@ -158,27 +159,61 @@ The values are:
 * `g:Mac_NamedMacroFuzzySearcher` - The type of search to use when selecting or executing named macros.  Currently, valid values are 'clap' (which will use [vim-clap](https://github.com/liuchengxu/vim-clap)) and 'fzf' (which will use [fzf.vim](https://github.com/junegunn/fzf.vim))
 * `g:Mac_NamedMacrosDirectory` - The directory to store the files associated with [named macros](#named-macros)
 * `g:Mac_NamedMacroParameters` - The list of [named parameters](#parameterized-macros) associated with any macros that you want to be parameterized.
+* `g:Mac_NamedMacroParametersByFileType` - The list of [named parameters](#parameterized-macros) associated with any filetype specific macros that you want to be parameterized.
 
 # Advanced Topics
 
+## File Type Macros
+
+In many cases you will be making macros that only apply to certain file types.  You could make these named macros in the way described above, but then they would be listed for all file types.  Also, you might want to use the same name for different macros depending on the file type (eg. "rename method", "create class", etc.).  For these cases you can use file-specific macros.
+
+First, you will need a mapping to name the macro for the specific file type:
+
+```viml
+" nmg = name macro global
+nmap <leader>nmg <plug>(Mac_NameCurrentMacro)
+" nmf = name macro file type
+nmap <leader>nmf <plug>(Mac_NameCurrentMacroForFileType)
+```
+
+Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>nm` to `<leader>nmg`.
+
+Now, when we record a named macro that is file-type-specific, we can execute `<leader>nmf` and it will save to a file-type specific directory.
+
+We can then execute `<leader>sm` or `<leader>gp` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
+
 ## Parameterized Macros
 
-Macrobatics also has built in support for using named parameters with your named macros.  How this works is that when recording the macro initially, you make use of certain register values, then when re-playing the macro, macrobatics will prompt the user to fill in a value for these registers.
+Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these paramters.
 
 For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you need the user to supply the new name for the method.  You can do this by doing the following:
 
-* Fill in a value for the 'a' register that will represent the new name for the method (eg. by executing `"ayiw`)
-* Record the macro, making use of the 'a' register to replace the current method name
+* Fill in a value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
+* Record the macro, making use of the 'n' register to replace the current method name
 * Name the current macro 'rename-current-method'.  It is now stored persistently into the macros folder.
 * Add the following to your `.vimrc`:
     ```viml
     let g:Mac_NamedMacroParameters = {
-        \ 'rename-current-method': { 'a': 'New Name' }
-        \ }
+    \   'add-name': { 'n': 'New Name' }
+    \ }
     ```
 * Restart vim, or re-source your `.vimrc`
 * Play the 'rename-current-method' macro
 * You should then be prompted for a "New Name" value.  The 'a' register will then be set to whatever you type here, and then the macro will be executed.
+
+You can also add parameter information to filetype specific macros.  For example:
+    ```viml
+    let g:Mac_NamedMacroParametersByFileType = {
+    \   'js': { 
+    \     'rename-current-method': { 'n': 'New Method Name' },
+    \     'create-method': { 'n': 'Method Name' },
+    \   },
+    \   'py': { 
+    \     'rename-current-method': { 'n': 'New Method Name' },
+    \     'create-method': { 'n': 'Method Name' },
+    \   },
+    \ }
+    ```
 
 ## <a id="shada-support"></a>Persistent/Shared History
 
@@ -201,34 +236,6 @@ Then, the next time you want to give a name to the active macro, you can execute
 Note that in addition to replaying the `x` macro with `"xgp`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
 
 Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
-
-## Buffer Local Macros
-
-In some cases you will be making macros that only apply to certain file types, or possibly certain projects.  In these cases, you don't need these macros listed when in other file types / projects.
-
-For example, if you wanted to add support for storing/playing macros on a per-file-type basis, you could add the following to your `.vimrc`:
-
-```viml
-" nmg = name macro global
-nmap <leader>nmg <plug>(Mac_NameCurrentMacro)
-" nmf = name macro file type
-nmap <leader>nmf :call macrobatics#saveCurrentMacroToDirectory('~/.config/macrobatics/filetype/' . &ft)<cr>
-```
-
-Note that unlike normal named macros, for buffer-local macros you need to explicitly supply the directory to save the macro to.  Also note that in the above vimscript that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>nm` to `<leader>nmg`.
-
-Now, when we record a named macro that is file-type-specific, we can execute `<leader>nmf` and it will save to a file-type specific directory.
-
-To have the file type specific macros available to use, we also need to set a value for `b:Mac_NamedMacrosDirectories`, which we could do by adding the following to your `.vimrc`:
-
-```viml
-augroup FileTypeMacrobatics
-    autocmd!
-    autocmd FileType * let b:Mac_NamedMacrosDirectories = ['~/.config/macrobatics/filetype/' . expand('<amatch>')]
-augroup END
-```
-
-Now, when we execute `<leader>sm` or `<leader>gp` (assuming default mappings) then we will get both the global list of macros as well as any file-type specific macros.
 
 ## FAQ
 

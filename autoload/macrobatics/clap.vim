@@ -2,16 +2,6 @@
 let s:lastNamedMacros = v:null
 let s:lastCount = v:null
 
-let g:clap_provider_macrobatics_select = {
-      \ 'source': function('s:clapSource'),
-      \ 'sink': function('macrobatics#selectNamedMacro')
-      \ }
-
-let g:clap_provider_macrobatics_play = {
-      \ 'source': function('s:clapSource'),
-      \ 'sink': function('s:clapPlaySink')
-      \ }
-
 function macrobatics#clap#isAvailable()
     return !empty(globpath(&runtimepath, "plugin/clap.vim", 1))
 endfunction
@@ -41,3 +31,13 @@ function s:cacheData()
     let s:lastNamedMacros = macrobatics#getNamedMacros()
 endfunction
 
+" Needs to come after the above methods
+let g:clap_provider_macrobatics_select = {
+      \ 'source': function('s:clapSource'),
+      \ 'sink': function('macrobatics#selectNamedMacro')
+      \ }
+
+let g:clap_provider_macrobatics_play = {
+      \ 'source': function('s:clapSource'),
+      \ 'sink': function('s:clapPlaySink')
+      \ }
