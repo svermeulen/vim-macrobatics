@@ -275,6 +275,11 @@ Note also that you might consider [naming the current macro](#named-macros) inst
     Yes!  This can be quite useful.  You can do this by either triggering a named macro via a key binding, or by triggering another macro that is stored in a different register than the current macro.
 
 
+* ### _Why did my macro stop working suddenly?_
+
+    This was probably because a mapping that was used inside the macro was changed.  One of the dangers of using macros is that it uses "recursive" mappings.  In other words, macros depend heavily on the current key bindings in place at the time the macro was recorded.   If you later modify one of the bindings that was used inside the macro, the macro will break.  In this case you will need to re-record the macro.
+
+
 * ### _Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?_
 
     Yes, this approach usually works as well.  Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
