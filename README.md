@@ -10,11 +10,11 @@ Macrobatics is a plugin for vim/neovim with the goal of making vim macros easier
 * Macro history, which can be navigated to play previously recorded macros
 * Repeatable macros with the `.` operator
 * Edit existing macros by appending or prepending content to it
-* Nested macros (create macros that play other macros)
-* Named macros saved persistently
+* Named macros (saved persistently)
 * Parameterized macros
 * File type specific macros
 * Written in pure vim-script
+* Nested macros (create macros that play other macros)
 
 ## Installation
 
@@ -22,7 +22,7 @@ Install into vim using your preferred plugin manager (eg. [vim-plug](https://git
 
 Note that in order for macros to be repeatable with the `.` key, you will need to also install [tpope/vim-repeat](https://github.com/tpope/vim-repeat) (you might also consider using [my fork](https://github.com/svermeulen/vim-repeat) of vim-repeat instead as discussed <a href="#repeat-bug">here</a>).
 
-Note also that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings below:
+Note also that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings.
 
 For example, to add just the most basic functionality:
 
@@ -34,53 +34,19 @@ nmap <nowait> gq <plug>(Mac_RecordNew)
 
 We choose `q` here because we don't need it anymore when using this plugin.  Of course you might not want these specific bindings so you can use what makes sense for your config.
 
-Or to add the full functionality:
-
-```
-" Use <nowait> to override the default bindings which wait for another key press
-nmap <nowait> q <plug>(Mac_Play)
-nmap <nowait> gq <plug>(Mac_RecordNew)
-
-" me = macro append
-nmap <leader>md :DisplayMacroHistory<cr>
-
-nmap [m <plug>(Mac_RotateBack)
-nmap ]m <plug>(Mac_RotateForward)
-
-" ma = macro append
-nmap <leader>ma <plug>(Mac_Append)
-" mp = macro prepend
-nmap <leader>mp <plug>(Mac_Prepend)
-
-" me = macro execute named
-nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
-
-" ms = macro select
-nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
-
-" nmg = name macro global
-nmap <leader>mng <plug>(Mac_NameCurrentMacro)
-
-" nmf = name macro file type
-nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
-
-```
-
-Of course, you might not want to use the full functionality above.  And you may also not want to use these specific bindings.  Each of the sections below explain the various parts of the above mappings, so I would recommend instead to add the parts you want as you read through the following sections.
-
 ## Recording
 
-With the above mappings, you can then press `<leader>mr` in Vim to begin recording a new macro.
+With the above mappings, you can then press `gq` in Vim to begin recording a new macro.
 
-However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `<leader>mr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` however this is [configurable](#configuration).
+However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `gq` will always record to the same register unless a register is explicitly given (eg. `"xgq` to record the macro to the `x` register).  By default this register is `m` however this is [configurable](#configuration).
 
 It works this way just because specifying the register this way is more consistent with other actions in Vim like delete, yank, etc.
 
-You can then stop recording by pressing the same keys again (`<leader>mr`)
+You can then stop recording by pressing the same keys again (`gq`)
 
 ## Playback and repeat
 
-Again assuming the above plug mappings, you can replay the current macro by pressing `q`.  Similar to `<leader>mr`, you can also pass a register to use using the standard Vim convention (eg. `"xq` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default macro register (`m`  by default but also [configurable](#configuration))
+Again assuming the above plug mappings, you can replay the current macro by pressing `q`.  Similar to `gq`, you can also pass a register to use using the standard Vim convention (eg. `"xq` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default macro register (`m`  by default but also [configurable](#configuration))
 
 Assuming [vim-repeat](https://github.com/tpope/vim-repeat) is installed, after playback or recording, you can use the standard repeat operator `.` to replay the same macro again in a different spot.  Or, you can also execute `q` / `"xq` again for the same effect.
 
@@ -114,7 +80,7 @@ nmap <leader>ma <plug>(Mac_Append)
 nmap <leader>mp <plug>(Mac_Prepend)
 ```
 
-Then, you can append behaviour to the current macro by pressing `<leader>ma`.  This will play the given macro and then immediately enter record mode to record any new content to the end of it.
+Then, you can append behaviour to the current macro by pressing `<leader>ma`.  This will play the current macro and then immediately enter record mode to record any new content to the end of it.
 
 The prepend `<leader>mp` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
 
@@ -157,6 +123,32 @@ nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
 ```
 
 Then you can execute `<leader>ms` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name as <a href="#named-macros">described above</a>.
+
+## Recommended configuration
+
+If you decide to adopt all the recommended bindings discussed above, you can include the following in your `.vimrc`:
+
+```viml
+" Use <nowait> to override the default bindings which wait for another key press
+nmap <nowait> q <plug>(Mac_Play)
+nmap <nowait> gq <plug>(Mac_RecordNew)
+
+nmap <leader>md :DisplayMacroHistory<cr>
+
+nmap [m <plug>(Mac_RotateBack)
+nmap ]m <plug>(Mac_RotateForward)
+
+nmap <leader>ma <plug>(Mac_Append)
+nmap <leader>mp <plug>(Mac_Prepend)
+
+" me = macro execute named
+nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
+
+nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
+
+nmap <leader>mng <plug>(Mac_NameCurrentMacro)
+nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
+```
 
 ## Configuration
 
@@ -260,7 +252,7 @@ In some cases you might find yourself making use of multiple macros at once.  In
 nmap <leader>mc <plug>(Mac_CopyCurrentMacroToRegister)
 ```
 
-Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `<leader>mr`, while also having access to the `x` macro (which you can replay by executing `"xq`).
+Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gq`, while also having access to the `x` macro (which you can replay by executing `"xq`).
 
 Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
 
