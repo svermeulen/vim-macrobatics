@@ -230,19 +230,18 @@ For example, let's say you have a macro that renames the current method that you
 * You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
 
 You can also add parameter information to filetype specific macros.  For example:
-
-    ```viml
-    let g:Mac_NamedMacroParametersByFileType = {
-    \   'js': { 
-    \     'rename-current-method': { 'n': 'New Method Name' },
-    \     'create-method': { 'n': 'Method Name' },
-    \   },
-    \   'py': { 
-    \     'rename-current-method': { 'n': 'New Method Name' },
-    \     'create-method': { 'n': 'Method Name' },
-    \   },
-    \ }
-    ```
+```viml
+let g:Mac_NamedMacroParametersByFileType = {
+\   'js': { 
+\     'rename-current-method': { 'n': 'New Method Name' },
+\     'create-method': { 'n': 'Method Name' },
+\   },
+\   'py': { 
+\     'rename-current-method': { 'n': 'New Method Name' },
+\     'create-method': { 'n': 'Method Name' },
+\   },
+\ }
+```
 
 ## Moving registers
 
