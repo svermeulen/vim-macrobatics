@@ -202,24 +202,32 @@ Now, when we record a named macro that is file-type-specific, we can execute `<l
 
 We can then execute `<leader>ms` or `<leader>me` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
 
+## <a id="shada-support"></a>Persistent/Shared History
+
+When `g:Mac_SavePersistently` is set to `1`, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+
+You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
+
+Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
+
 ## Parameterized Macros
 
 Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these paramters.
 
-For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you need the user to supply the new name for the method.  You can do this by doing the following:
+For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can do this by doing the following:
 
-* Fill in a value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
+* Fill in a temporary value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
 * Record the macro, making use of the 'n' register to replace the current method name
-* Name the current macro 'rename-current-method'.  It is now stored persistently into the macros folder.
+* Name the current macro `rename-current-method` as [described above](#named-macros).  It is now stored persistently into the macros folder.
 * Add the following to your `.vimrc`:
     ```viml
     let g:Mac_NamedMacroParameters = {
-    \   'add-name': { 'n': 'New Name' }
+    \   'rename-current-method': { 'n': 'New Name' }
     \ }
     ```
 * Restart vim, or re-source your `.vimrc`
-* Play the 'rename-current-method' macro
-* You should then be prompted for a "New Name" value.  The 'a' register will then be set to whatever you type here, and then the macro will be executed.
+* Play the `rename-current-method` macro
+* You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
 
 You can also add parameter information to filetype specific macros.  For example:
     ```viml
@@ -234,14 +242,6 @@ You can also add parameter information to filetype specific macros.  For example
     \   },
     \ }
     ```
-
-## <a id="shada-support"></a>Persistent/Shared History
-
-When `g:Mac_SavePersistently` is set to `1`, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
-
-You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
-
-Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
 
 ## Moving registers
 
