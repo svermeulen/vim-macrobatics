@@ -229,6 +229,8 @@ For example, let's say you have a macro that renames the current method that you
 * Play the `rename-current-method` macro
 * You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
 
+Note that you can use any register in place of 'n' here, including the default `"` register.
+
 You can also add parameter information to filetype specific macros.  For example:
 ```viml
 let g:Mac_NamedMacroParametersByFileType = {
