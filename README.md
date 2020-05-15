@@ -7,13 +7,14 @@ Macrobatics is a plugin for vim/neovim with the goal of making vim macros easier
 
 ## Features
 
-* Provides a history of macros, which can be navigated to play previously recorded ones.
-* Makes macros repeatable with the `.` operator.
-* Supports editting existing macros by appending or prepending content to it.
-* Supports nested macros (create macros that play other macros).
-* Supports giving macros a name and then saving them persistently
-* Supports parameterized macros
-* Written in pure vim-script.
+* Macro history, which can be navigated to play previously recorded macros
+* Repeatable macros with the `.` operator
+* Edit existing macros by appending or prepending content to it
+* Nested macros (create macros that play other macros)
+* Named macros saved persistently
+* Parameterized macros
+* File type specific macros
+* Written in pure vim-script
 
 ## Installation
 
@@ -26,25 +27,62 @@ Note also that this plugin contains no default mappings and will have no effect 
 For example, to add just the most basic functionality:
 
 ```viml
-nmap gp <plug>(Mac_Play)
-nmap gr <plug>(Mac_RecordNew)
+" Use <nowait> to override the default bindings which wait for another key press
+nmap <nowait> q <plug>(Mac_Play)
+nmap <nowait> gq <plug>(Mac_RecordNew)
 ```
+
+We choose `q` here because we don't need it anymore when using this plugin.  Of course you might not want these specific bindings so you can use what makes sense for your config.
+
+Or to add the full functionality:
+
+```
+" Use <nowait> to override the default bindings which wait for another key press
+nmap <nowait> q <plug>(Mac_Play)
+nmap <nowait> gq <plug>(Mac_RecordNew)
+
+" me = macro append
+nmap <leader>md :DisplayMacroHistory<cr>
+
+nmap [m <plug>(Mac_RotateBack)
+nmap ]m <plug>(Mac_RotateForward)
+
+" ma = macro append
+nmap <leader>ma <plug>(Mac_Append)
+" mp = macro prepend
+nmap <leader>mp <plug>(Mac_Prepend)
+
+" me = macro execute named
+nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
+
+" ms = macro select
+nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
+
+" nmg = name macro global
+nmap <leader>mng <plug>(Mac_NameCurrentMacro)
+
+" nmf = name macro file type
+nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
+
+```
+
+Of course, you might not want to use the full functionality above.  And you may also not want to use these specific bindings.  Each of the sections below explain the various parts of the above mappings, so I would recommend instead to add the parts you want as you read through the following sections.
 
 ## Recording
 
-With the above mappings, you can then press `gr` in Vim to begin recording a new macro.
+With the above mappings, you can then press `<leader>mr` in Vim to begin recording a new macro.
 
-However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `gr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` however this is [configurable](#configuration).
+However - Note that this mapping works differently than Vim's default way of recording a macro with the `q` key.  Unlike `q`, which is immediately followed by the register you want to record the macro to, `<leader>mr` will always record to the same register unless a register is explicitly given (eg. `"xgr` to record the macro to the `x` register).  By default this register is `m` however this is [configurable](#configuration).
 
 It works this way just because specifying the register this way is more consistent with other actions in Vim like delete, yank, etc.
 
-You can then stop recording by pressing the same keys again (`gr`)
+You can then stop recording by pressing the same keys again (`<leader>mr`)
 
 ## Playback and repeat
 
-Again assuming the above plug mappings, you can replay the current macro by pressing `gp`.  Similar to `gr`, you can also pass a register to use using the standard Vim convention (eg. `"xgp` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default macro register (`m`  by default but also [configurable](#configuration))
+Again assuming the above plug mappings, you can replay the current macro by pressing `q`.  Similar to `<leader>mr`, you can also pass a register to use using the standard Vim convention (eg. `"xq` to execute the macro stored in the `x` register).   And when a register is not specified, it will play whatever macro is stored in the default macro register (`m`  by default but also [configurable](#configuration))
 
-Assuming [vim-repeat](https://github.com/tpope/vim-repeat) is installed, after playback or recording, you can use the standard repeat operator `.` to replay the same macro again in a different spot.  Or, you can also execute `gp` / `"xgp` again for the same effect.
+Assuming [vim-repeat](https://github.com/tpope/vim-repeat) is installed, after playback or recording, you can use the standard repeat operator `.` to replay the same macro again in a different spot.  Or, you can also execute `q` / `"xq` again for the same effect.
 
 You can also pass a count to the play command to immediately repeat the macro a given number of times.
 
@@ -53,7 +91,7 @@ You can also pass a count to the play command to immediately repeat the macro a 
 To view the current history of macros, you can execute `:DisplayMacroHistory`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).  You might also consider adding a binding for this:
 
 ```viml
-nmap <leader>dm :DisplayMacroHistory<cr>
+nmap <leader>md :DisplayMacroHistory<cr>
 ```
 
 You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:Mac_DefaultRegister`) and the rest are displayed as indexes into the history buffer.
@@ -72,30 +110,28 @@ Then if you execute `[m` or `]m` you should see a preview of the newly selected 
 In many cases, after recording a macro, you realize that you would like to tweak it slightly, usually by either inserting something in the beginning or adding something to the end.  Macrobatics provides two bindings to make this process very easy.  For example, you could add the following bindings to your `.vimrc`:
 
 ```viml
-nmap ggp <plug>(Mac_Append)
-nmap ggr <plug>(Mac_Prepend)
+nmap <leader>ma <plug>(Mac_Append)
+nmap <leader>mp <plug>(Mac_Prepend)
 ```
 
-Then, you can append behaviour to the current macro by pressing `ggp`.  This will play the given macro and then immediately enter record mode to record any new content to the end of it.
+Then, you can append behaviour to the current macro by pressing `<leader>ma`.  This will play the given macro and then immediately enter record mode to record any new content to the end of it.
 
-The prepend `ggr` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
+The prepend `<leader>mp` command works similarly except that it will enter record mode immediately, and then play the previous macro immediately after the recording is stopped.
 
 Then in both cases, the macro will be updated to contain the new change.
-
-The suggested values are `ggp` and `ggr` because they work similarly to `gp` and `gr` (`gp` and `gpp` play immediately, `gr` and `grr` record immediately)
 
 ## <a id="named-macros"></a>Named Macros
 
 If you find yourself re-using a macro quite often, then you might consider giving it a name, and maybe even adding a direct key mapping for it.  You can do this by first adding the following mapping or similar to your `.vimrc`:
 
 ```viml
-nmap <leader>nm <plug>(Mac_NameCurrentMacro)
+nmap <leader>mn <plug>(Mac_NameCurrentMacro)
 ```
 
-Now, every time you create a new macro that you want to name, you can execute `<leader>nm`, and you will then be prompted to type in a name for it.  Then, to add a mapping for it, you can add the following to your `.vimrc`:
+Now, every time you create a new macro that you want to name, you can execute `<leader>mn`, and you will then be prompted to type in a name for it.  Then, to add a mapping for it, you can add the following to your `.vimrc`:
 
 ```viml
-nnoremap <leader>tm :call macrobatics#playNamedMacro('foo')<cr>
+nnoremap <leader>mf :call macrobatics#playNamedMacro('foo')<cr>
 ```
 
 Where `foo` is the name that you typed into the prompt, and `<leader>tm` is the keys that you want to use for your custom macro.
@@ -105,30 +141,22 @@ Where `foo` is the name that you typed into the prompt, and `<leader>tm` is the 
 In many cases, you will have named macros that you don't use enough to justify adding an entirely new key binding.  In these cases, it's helpful to be able to play the named macro by searching through the list of named macros whenever you need it instead.  This is often easier than needing to remember a key binding for something you rarely use.  You can do this by adding the following maps or similar to your `.vimrc`:
 
 ```viml
-nmap <leader>gp <plug>(Mac_SearchForNamedMacroAndPlay)
+" me = macro execute
+nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
 ```
 
 Note that in order for these maps to work, you must either have [fzf.vim](https://github.com/junegunn/fzf.vim) or [vim-clap](https://github.com/liuchengxu/vim-clap) installed.  If you would prefer using another fuzzy list plugin, feel free to [create a github issue for it](https://github.com/svermeulen/vim-macrobatics/issues/new).
 
-Now, you can execute `<leader>gp`, to directly choose the named macro you want to play!  Note that you can also pass a count to this command.
+Now, you can execute `<leader>me`, to directly choose the named macro you want to play!  Note that you can also pass a count to this command.
 
 In some cases you might want to just select a named macro rather than playing it directly.  You can do that as well with the following mapping:
 
 ```viml
-nmap <leader>sm <plug>(Mac_SearchForNamedMacroAndSelect)
+" ms = macro select
+nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
 ```
 
-Then you can execute `<leader>sm` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name as <a href="#named-macros">described above</a>.
-
-## Re-mapping `q`
-
-If you find yourself using this plugin and no longer have a need for Vim's built-in way of recording registers, then you might want to re-use the `q` key for something else.  An easy way to achieve this is to use the `<nowait>` setting when adding a new binding. For example:
-
-```viml
-nnoremap <nowait> q :echo 'my new binding'<cr>
-```
-
-Without the `<nowait>` setting here, after hitting `q`, vim will always wait for another keypress for the built-in macro mapping, even if you add a mapping for `q` by itself.
+Then you can execute `<leader>ms` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name as <a href="#named-macros">described above</a>.
 
 ## Configuration
 
@@ -171,16 +199,16 @@ First, you will need a mapping to name the macro for the specific file type:
 
 ```viml
 " nmg = name macro global
-nmap <leader>nmg <plug>(Mac_NameCurrentMacro)
+nmap <leader>mng <plug>(Mac_NameCurrentMacro)
 " nmf = name macro file type
-nmap <leader>nmf <plug>(Mac_NameCurrentMacroForFileType)
+nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
 ```
 
-Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>nm` to `<leader>nmg`.
+Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>mn` to `<leader>mng`.
 
-Now, when we record a named macro that is file-type-specific, we can execute `<leader>nmf` and it will save to a file-type specific directory.
+Now, when we record a named macro that is file-type-specific, we can execute `<leader>mnf` and it will save to a file-type specific directory.
 
-We can then execute `<leader>sm` or `<leader>gp` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
+We can then execute `<leader>ms` or `<leader>me` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
 
 ## Parameterized Macros
 
@@ -228,12 +256,13 @@ Note also that the `!` option must be added to Neovims `shada` setting for this 
 In some cases you might find yourself making use of multiple macros at once.  In this case, it is cumbersome to need to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
 
 ```viml
-nmap gs <plug>(Mac_CopyCurrentMacroToRegister)
+" mc = macro copy
+nmap <leader>mc <plug>(Mac_CopyCurrentMacroToRegister)
 ```
 
-Then, the next time you want to give a name to the active macro, you can execute `"xgs` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gr`, while also having access to the `x` macro (which you can replay by executing `"xgp`).
+Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `<leader>mr`, while also having access to the `x` macro (which you can replay by executing `"xq`).
 
-Note that in addition to replaying the `x` macro with `"xgp`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
+Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
 
 Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
 
@@ -279,3 +308,4 @@ Note also that you might consider [naming the current macro](#named-macros) inst
     ```
 
     However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
+
