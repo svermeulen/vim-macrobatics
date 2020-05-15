@@ -20,7 +20,7 @@ Macrobatics is a plugin for vim/neovim with the goal of making vim macros easier
 
 Install into vim using your preferred plugin manager (eg. [vim-plug](https://github.com/junegunn/vim-plug)).
 
-Note that in order for macros to be repeatable with the `.` key, you will need to also install [tpope/vim-repeat](https://github.com/tpope/vim-repeat) (you might also consider using [my fork](https://github.com/svermeulen/vim-repeat) of vim-repeat instead as discussed <a href="#repeat-bug">here</a>).
+Note that in order for macros to be repeatable with the `.` key, you will need to also install [tpope/vim-repeat](https://github.com/tpope/vim-repeat).
 
 Note also that this plugin contains no default mappings and will have no effect until you add your own maps to one of the `<plug>` bindings.
 
@@ -230,6 +230,7 @@ For example, let's say you have a macro that renames the current method that you
 * You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
 
 You can also add parameter information to filetype specific macros.  For example:
+
     ```viml
     let g:Mac_NamedMacroParametersByFileType = {
     \   'js': { 
@@ -245,7 +246,7 @@ You can also add parameter information to filetype specific macros.  For example
 
 ## Moving registers
 
-In some cases you might find yourself making use of multiple macros at once.  In this case, it is cumbersome to need to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
+In some cases you might find yourself making use of multiple macros at once.  In this case, it can be cumbersome to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
 
 ```viml
 " mc = macro copy
@@ -254,7 +255,7 @@ nmap <leader>mc <plug>(Mac_CopyCurrentMacroToRegister)
 
 Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gq`, while also having access to the `x` macro (which you can replay by executing `"xq`).
 
-Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgr`, append with `"xggr`, or prepend with `"xggp`.
+Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgq`, append with `"x<leader>ma`, or prepend with `"x<leader>mp`.
 
 Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
 
