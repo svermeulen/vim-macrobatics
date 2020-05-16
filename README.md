@@ -190,7 +190,7 @@ The values are:
 
 * ### _The repeat button '.' doesn't work when executed immediately after undo_
 
-    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
+    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  If this issue bothers you, you can use [my fork](https://github.com/svermeulen/vim-repeat) of vim-repeat instead which contains the fix.
 
 
 * ### _Can I execute a macro from within a macro?_
