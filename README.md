@@ -332,6 +332,7 @@ let g:Mac_NamedMacroParameters = {
     \ }
 
 " An example of using a custom async function to retrieve the value
+" Note that we can also just not call the sink function which will just cancel
 function! s:getFoo(argName, sink)
     call a:sink('bar')
 endfunction
@@ -363,6 +364,7 @@ let g:Mac_NamedMacroParameters = {
 
 " An example of using a custom async function to retrieve the list of choices
 " This will trigger either fzf or vim-clap to choose a value in the given list
+" Note that we can also just not call the sink function which will just cancel
 function! s:getFooChoices(argName, sink)
     call a:sink(['foo', 'bar', 'qux'])
 endfunction
