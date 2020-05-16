@@ -159,7 +159,7 @@ endfunction
 function! macrobatics#playNamedMacro(name, ...)
     let s:queuedMacroName = a:name
     let s:queuedMacroCount = a:0 ? a:1 : 1
-    let s:paramInputQueue = s:getMacroParametersInfo(a:name)
+    let s:paramInputQueue = items(s:getMacroParametersInfo(a:name))
     call s:updateNextParameterRegThenPlay()
 endfunction
 
