@@ -14,9 +14,7 @@ let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
 let s:recordInfo = v:null
-let s:queuedMacroName = v:null
-let s:queuedMacroCount = v:null
-let s:paramInputQueue = v:null
+let s:queuedMacroInfo = v:null
 
 nnoremap <silent> <plug>(Mac__OnPlayMacroCompleted) :<c-u>call <sid>onPlayMacroCompleted()<cr>
 nnoremap <silent> <plug>(Mac__RepeatLast) :<c-u>call <sid>repeatLast()<cr>
@@ -116,38 +114,42 @@ endfunction
 
 function! macrobatics#searchThenPlayNamedMacro(cnt)
     let cnt = a:cnt > 0 ? a:cnt : 1
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [cnt])
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [cnt])
 endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
 endfunction
 
-function s:updateNextParameterRegThenPlay()
-    if len(s:paramInputQueue) == 0
-        call macrobatics#selectNamedMacro(s:queuedMacroName)
-        call macrobatics#play(s:defaultMacroReg, s:queuedMacroCount)
+function s:queuedMacroNext()
+    let info = s:queuedMacroInfo
+    call s:assert(!(info is v:null))
+
+    if len(info.paramInputQueue) == 0
+        call s:updateMacroRegisterForNamedMacro(info.macroName)
+        if (info.autoplay)
+            call macrobatics#play(s:defaultMacroReg, info.playCount)
+        endif
         return
     endif
 
-    let item = remove(s:paramInputQueue, 0)
-    let paramReg = item[0]
-    let paramInfo = item[1]
-    let paramInfoType = type(paramInfo)
+    let paramItem = remove(info.paramInputQueue, 0)
+    let paramReg = paramItem[0]
+    let paramInfo = paramItem[1]
 
-    if paramInfoType == v:t_string
+    if type(paramInfo) == v:t_string
         let paramName = paramInfo
-        let value = input(paramName . ": ")
-        if len(value) == 0
-            call s:echo("Cancelled macro '%s'", s:queuedMacroName)
+        let paramValue = input(paramName . ": ")
+        if len(paramValue) == 0
+            call s:echo("Cancelled macro '%s'", info.macroName)
             return
         endif
-        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
+        call s:assert(len(paramReg) == 1, "Expected register paramValue for macro parameter")
         call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
-        call setreg(paramReg, value)
-        call s:updateNextParameterRegThenPlay()
+        call setreg(paramReg, paramValue)
+        call s:queuedMacroNext()
     else
-        call s:assert(paramInfoType == v:t_dict,
+        call s:assert(type(paramInfo) == v:t_dict,
             \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", s:queuedMacroName, paramReg)
 
         let paramName = paramInfo.name
@@ -157,13 +159,11 @@ function s:updateNextParameterRegThenPlay()
 endfunction
 
 function! macrobatics#playNamedMacro(name, ...)
-    let s:queuedMacroName = a:name
-    let s:queuedMacroCount = a:0 ? a:1 : 1
-    let s:paramInputQueue = items(s:getMacroParametersInfo(a:name))
-    call s:updateNextParameterRegThenPlay()
+    let playCount = a:0 ? a:1 : 1
+    call s:processNamedMacro(a:name, 1, playCount)
 endfunction
 
-function! macrobatics#selectNamedMacro(name)
+function! s:updateMacroRegisterForNamedMacro(name)
     let macroDir = s:findNamedMacroDir(a:name)
     let filePath = s:constructMacroPath(macroDir, a:name)
     let cache = s:getMacroCacheForDir(macroDir)
@@ -181,6 +181,21 @@ function! macrobatics#selectNamedMacro(name)
         endif
     endif
     call macrobatics#setCurrent(macInfo.data)
+endfunction
+
+function! s:processNamedMacro(macroName, autoPlay, cnt)
+    let s:queuedMacroInfo = {
+        \   'macroName': a:macroName,
+        \   'autoplay': a:autoplay,
+        \   'playCount': a:cnt,
+        \   'paramInputQueue': items(s:getMacroParametersInfo(a:macroName)),
+        \ }
+
+    call s:queuedMacroNext()
+endfunction
+
+function! macrobatics#selectNamedMacro(name)
+    call s:processNamedMacro(a:name, 0, 0)
 endfunction
 
 function! macrobatics#onVimEnter()
