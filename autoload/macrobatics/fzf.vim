@@ -3,23 +3,10 @@ function macrobatics#fzf#isAvailable()
     return !empty(globpath(&runtimepath, "plugin/fzf.vim", 1))
 endfunction
 
-function macrobatics#fzf#selectNamedMacro()
+function macrobatics#fzf#makeChoice(values, sink)
     call fzf#run({
-        \ 'source': macrobatics#getNamedMacros(),
+        \ 'source': a:values,
         \ 'down': '40%',
-        \ 'sink': function('macrobatics#selectNamedMacro')})
+        \ 'sink': a:sink})
 endfunction
-
-function s:fzfPlaySink(name)
-    call macrobatics#playNamedMacro(a:name, s:lastCount)
-endfunction
-
-function macrobatics#fzf#playNamedMacro(cnt)
-    let s:lastCount = a:cnt
-    call fzf#run({
-        \ 'source': macrobatics#getNamedMacros(),
-        \ 'down': '40%',
-        \ 'sink': function('s:fzfPlaySink')})
-endfunction
-
 

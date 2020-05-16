@@ -14,6 +14,7 @@ let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
 let s:recordInfo = v:null
+let s:queuedMacroInfo = v:null
 
 nnoremap <silent> <plug>(Mac__OnPlayMacroCompleted) :<c-u>call <sid>onPlayMacroCompleted()<cr>
 nnoremap <silent> <plug>(Mac__RepeatLast) :<c-u>call <sid>repeatLast()<cr>
@@ -111,26 +112,90 @@ function! macrobatics#nameCurrentMacro()
     call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
 
+function! s:makeChoice(values, sink)
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [a:values, a:sink])
+endfunction
+
 function! macrobatics#searchThenPlayNamedMacro(cnt)
-    let cnt = a:cnt > 0 ? a:cnt : 1
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#playNamedMacro", [cnt])
+    let playCount = a:cnt > 0 ? a:cnt : 1
+    let macroNames = macrobatics#getNamedMacros()
+    call s:makeChoice(macroNames, {choice -> macrobatics#playNamedMacro(choice, playCount)})
 endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
+    let macroNames = macrobatics#getNamedMacros()
+    call s:makeChoice(macroNames, function('macrobatics#selectNamedMacro'))
+endfunction
+
+function s:paramValueSink(reg, value)
+    call s:assert(len(a:reg) == 1, "Expected register value for macro parameter")
+    call s:assert(a:reg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
+    call setreg(a:reg, a:value)
+    call s:queuedMacroNext()
+endfunction
+
+function s:queuedMacroNext()
+    let info = s:queuedMacroInfo
+    call s:assert(!(info is v:null))
+
+    if len(info.paramInputQueue) == 0
+        call s:updateMacroRegisterForNamedMacro(info.macroName)
+        if (info.autoplay)
+            call macrobatics#play(s:defaultMacroReg, info.playCount)
+        endif
+        return
+    endif
+
+    let paramItem = remove(info.paramInputQueue, 0)
+    let paramReg = paramItem[0]
+    let paramInfo = paramItem[1]
+
+    if type(paramInfo) == v:t_string
+        let paramName = paramInfo
+        let paramValue = input(paramName . ": ")
+        if len(paramValue) == 0
+            call s:echo("Cancelled macro '%s'", info.macroName)
+            return
+        endif
+        call s:paramValueSink(paramReg, paramValue)
+    else
+        call s:assert(type(paramInfo) == v:t_dict,
+            \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", info.macroName, paramReg)
+
+        if has_key(paramInfo, 'value')
+            call s:paramValueSink(paramReg, paramInfo.value)
+        elseif has_key(paramInfo, 'valueProvider')
+            if get(paramInfo, 'is_async', 0)
+                call paramInfo.valueProvider(paramInfo.name, {choice -> s:paramValueSink(paramReg, choice)})
+            else
+                call s:paramValueSink(paramReg, paramInfo.valueProvider(paramInfo.name))
+            endif
+        elseif has_key(paramInfo, 'choices')
+            call s:echo("Choose value for '%s'", paramInfo.name)
+            call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramReg, choice)})
+        elseif has_key(paramInfo, 'choicesProvider')
+            if get(paramInfo, 'is_async', 0)
+                call s:echo("Choose value for '%s'", paramInfo.name)
+                call paramInfo.choicesProvider(paramInfo.name, {
+                    \ choices -> s:makeChoice(
+                        \ choices, {choice -> s:paramValueSink(paramReg, choice)})})
+            else
+                call s:makeChoice(paramInfo.choicesProvider(paramInfo.name),
+                    \ {choice -> s:paramValueSink(paramReg, choice)})
+            endif
+        else
+            call s:assert(0,
+                \ "Unexpected value for macro '%s' and register '%s'", info.macroName, paramReg)
+        endif
+    endif
 endfunction
 
 function! macrobatics#playNamedMacro(name, ...)
-    if !s:inputMacroParameters(a:name)
-        call s:echo("Cancelled macro '%s'", a:name)
-        return
-    endif
-    let cnt = a:0 ? a:1 : 1
-    call macrobatics#selectNamedMacro(a:name)
-    call macrobatics#play(s:defaultMacroReg, cnt)
+    let playCount = a:0 ? a:1 : 1
+    call s:processNamedMacro(a:name, 1, playCount)
 endfunction
 
-function! macrobatics#selectNamedMacro(name)
+function! s:updateMacroRegisterForNamedMacro(name)
     let macroDir = s:findNamedMacroDir(a:name)
     let filePath = s:constructMacroPath(macroDir, a:name)
     let cache = s:getMacroCacheForDir(macroDir)
@@ -148,6 +213,21 @@ function! macrobatics#selectNamedMacro(name)
         endif
     endif
     call macrobatics#setCurrent(macInfo.data)
+endfunction
+
+function! s:processNamedMacro(macroName, autoplay, cnt)
+    let s:queuedMacroInfo = {
+        \   'macroName': a:macroName,
+        \   'autoplay': a:autoplay,
+        \   'playCount': a:cnt,
+        \   'paramInputQueue': items(s:getMacroParametersInfo(a:macroName)),
+        \ }
+
+    call s:queuedMacroNext()
+endfunction
+
+function! macrobatics#selectNamedMacro(name)
+    call s:processNamedMacro(a:name, 0, 0)
 endfunction
 
 function! macrobatics#onVimEnter()
@@ -494,22 +574,6 @@ function s:getMacroParametersInfo(name)
 
     let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
     return get(globalMap, a:name, {})
-endfunction
-
-function s:inputMacroParameters(name)
-    let params = s:getMacroParametersInfo(a:name)
-    for item in items(params)
-        let paramReg = item[0]
-        let paramName = item[1]
-        let value = input(paramName . ": ")
-        if len(value) == 0
-            return 0
-        endif
-        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
-        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
-        call setreg(paramReg, value)
-    endfor
-    return 1
 endfunction
 
 function s:loadNamedMacroData(filePath)

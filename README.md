@@ -181,85 +181,6 @@ The values are:
 * `g:Mac_NamedMacroParameters` - The list of [named parameters](#parameterized-macros) associated with any macros that you want to be parameterized.
 * `g:Mac_NamedMacroParametersByFileType` - The list of [named parameters](#parameterized-macros) associated with any filetype specific macros that you want to be parameterized.
 
-# Advanced Topics
-
-## File Type Macros
-
-In many cases you will be making macros that only apply to certain file types.  You could make these named macros in the way described above, but then they would be listed for all file types.  Also, you might want to use the same name for different macros depending on the file type (eg. "rename method", "create class", etc.).  For these cases you can use file-specific macros.
-
-First, you will need a mapping to name the macro for the specific file type:
-
-```viml
-" nmg = name macro global
-nmap <leader>mng <plug>(Mac_NameCurrentMacro)
-" nmf = name macro file type
-nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
-```
-
-Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>mn` to `<leader>mng`.
-
-Now, when we record a named macro that is file-type-specific, we can execute `<leader>mnf` and it will save to a file-type specific directory.
-
-We can then execute `<leader>ms` or `<leader>me` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
-
-## <a id="shada-support"></a>Persistent/Shared History
-
-When `g:Mac_SavePersistently` is set to `1`, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
-
-You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
-
-Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
-
-## Parameterized Macros
-
-Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these paramters.
-
-For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can do this by doing the following:
-
-* Fill in a temporary value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
-* Record the macro, making use of the 'n' register to replace the current method name
-* Name the current macro `rename-current-method` as [described above](#named-macros).  It is now stored persistently into the macros folder.
-* Add the following to your `.vimrc`:
-    ```viml
-    let g:Mac_NamedMacroParameters = {
-    \   'rename-current-method': { 'n': 'New Name' }
-    \ }
-    ```
-* Restart vim, or re-source your `.vimrc`
-* Play the `rename-current-method` macro
-* You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
-
-Note that you can use any register in place of 'n' here, including the default `"` register.
-
-You can also add parameter information to filetype specific macros.  For example:
-```viml
-let g:Mac_NamedMacroParametersByFileType = {
-\   'js': { 
-\     'rename-current-method': { 'n': 'New Method Name' },
-\     'create-method': { 'n': 'Method Name' },
-\   },
-\   'py': { 
-\     'rename-current-method': { 'n': 'New Method Name' },
-\     'create-method': { 'n': 'Method Name' },
-\   },
-\ }
-```
-
-## Moving registers
-
-In some cases you might find yourself making use of multiple macros at once.  In this case, it can be cumbersome to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
-
-```viml
-" mc = macro copy
-nmap <leader>mc <plug>(Mac_CopyCurrentMacroToRegister)
-```
-
-Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gq`, while also having access to the `x` macro (which you can replay by executing `"xq`).
-
-Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgq`, append with `"x<leader>ma`, or prepend with `"x<leader>mp`.
-
-Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
-
 ## FAQ
 
 * ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
@@ -269,7 +190,7 @@ Note also that you might consider [naming the current macro](#named-macros) inst
 
 * ### _The repeat button '.' doesn't work when executed immediately after undo_
 
-    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
+    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  If this issue bothers you, you can use [my fork](https://github.com/svermeulen/vim-repeat) of vim-repeat instead which contains the fix.
 
 
 * ### _Can I execute a macro from within a macro?_
@@ -307,4 +228,168 @@ Note also that you might consider [naming the current macro](#named-macros) inst
     ```
 
     However, depending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
+
+# Advanced Topics
+
+## File Type Macros
+
+In many cases you will be making macros that only apply to certain file types.  You could make these named macros in the way described above, but then they would be listed for all file types.  Also, you might want to use the same name for different macros depending on the file type (eg. "rename method", "create class", etc.).  For these cases you can use file-specific macros.
+
+First, you will need a mapping to name the macro for the specific file type:
+
+```viml
+" nmg = name macro global
+nmap <leader>mng <plug>(Mac_NameCurrentMacro)
+" nmf = name macro file type
+nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
+```
+
+Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from `<leader>mn` to `<leader>mng`.
+
+Now, when we record a named macro that is file-type-specific, we can execute `<leader>mnf` and it will save to a file-type specific directory.
+
+We can then execute `<leader>ms` or `<leader>me` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
+
+## <a id="shada-support"></a>Persistent/Shared History
+
+When `g:Mac_SavePersistently` is set to `1`, the macro history will be saved persistently by taking advantage of Neovim's "ShaDa" feature.  Note that since ShaDa support only exists in Neovim this feature is not available for Vim.
+
+You can also use this feature to sync the macro history across multiple running instances of Vim by updating Neovim's shada file.  For example, if you execute `:wshada` in the first instance and then `:rshada` in the second instance, the second instance will be synced with the macro history in the first instance.  If this becomes a common operation you might consider using key bindings for this.
+
+Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
+
+## Parameterized Macros
+
+Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.
+
+For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
+
+* Fill in a temporary value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
+* Record the macro, making use of the 'n' register to replace the current method name
+* Name the current macro `rename-current-method` as [described above](#named-macros).  It is now stored persistently into the macros folder.
+* Add the following to your `.vimrc`:
+    ```viml
+    let g:Mac_NamedMacroParameters = {
+    \   'rename-current-method': { 'n': 'New Name' }
+    \ }
+    ```
+* Restart vim, or re-source your `.vimrc`
+* Play the `rename-current-method` macro
+* You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
+
+Note that you can use any register in place of 'n' here, including the default `"` register.
+
+You can also add parameter information to filetype specific macros.  For example:
+```viml
+let g:Mac_NamedMacroParametersByFileType = {
+\   'js': { 
+\     'rename-current-method': { 'n': 'New Method Name' },
+\     'create-method': { 'n': 'Method Name' },
+\   },
+\   'py': { 
+\     'rename-current-method': { 'n': 'New Method Name' },
+\     'create-method': { 'n': 'Method Name' },
+\   },
+\ }
+```
+
+In most cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it is more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can refer to the following examples to learn how these kinds of parameterized macros can be defined:
+
+```viml
+" An example of using a hard-coded value
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'value': 'bar'
+    \     },
+    \   },
+    \ }
+
+" An example of using a list of values
+" This will trigger either fzf or vim-clap to choose a value in the given list
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'choices': ['bar', 'qux', 'gorp']
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom function to retrieve the value
+function! s:getFoo(argName)
+    return 'bar'
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'valueProvider': function('s:getFoo')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom async function to retrieve the value
+function! s:getFoo(argName, sink)
+    call a:sink('bar')
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'is_async': 1,
+    \       'valueProvider': function('s:getFoo')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom function to retrieve the list of choices
+" This will trigger either fzf or vim-clap to choose a value in the given list
+function! s:getFooChoices(argName)
+    return ['foo', 'bar', 'qux']
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'choicesProvider': function('s:getFooChoices')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom async function to retrieve the list of choices
+" This will trigger either fzf or vim-clap to choose a value in the given list
+function! s:getFooChoices(argName, sink)
+    call a:sink(['foo', 'bar', 'qux'])
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'is_async': 1,
+    \       'choicesProvider': function('s:getFooChoices')
+    \     },
+    \   },
+    \ }
+```
+
+## Moving registers
+
+In some cases you might find yourself making use of multiple macros at once.  In this case, it can be cumbersome to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
+
+```viml
+" mc = macro copy
+nmap <leader>mc <plug>(Mac_CopyCurrentMacroToRegister)
+```
+
+Then, the next time you want to give a name to the active macro, you can execute `"x<leader>mc` where `x` is the register you want to associate with the active macro.  You can then record some number of new macros by executing `gq`, while also having access to the `x` macro (which you can replay by executing `"xq`).
+
+Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgq`, append with `"x<leader>ma`, or prepend with `"x<leader>mp`.
+
+Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
 

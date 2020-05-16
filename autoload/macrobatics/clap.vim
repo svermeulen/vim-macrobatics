@@ -1,43 +1,26 @@
 
-let s:lastNamedMacros = v:null
-let s:lastCount = v:null
+let s:values = v:null
+let s:sink = v:null
 
 function macrobatics#clap#isAvailable()
     return !empty(globpath(&runtimepath, "plugin/clap.vim", 1))
 endfunction
 
-function macrobatics#clap#selectNamedMacro()
-    call s:cacheData()
-    Clap macrobatics_select
+function macrobatics#clap#makeChoice(values, sink)
+    let s:sink = a:sink
+    let s:values = a:values
+    Clap macrobatics
 endfunction
 
-function macrobatics#clap#playNamedMacro(cnt)
-    let s:lastCount = a:cnt
-    call s:cacheData()
-    Clap macrobatics_play
-endfunction
-
-function s:clapPlaySink(name)
-    call macrobatics#playNamedMacro(a:name, s:lastCount)
+function s:clapPlaySink(choice)
+    call s:sink(a:choice)
 endfunction
 
 function s:clapSource()
-    return s:lastNamedMacros
+    return s:values
 endfunction
 
-function s:cacheData()
-    " We need to cache the named macro list because it checks current file type,
-    " which will be different when the clap window is open
-    let s:lastNamedMacros = macrobatics#getNamedMacros()
-endfunction
-
-" Needs to come after the above methods
-let g:clap_provider_macrobatics_select = {
-      \ 'source': function('s:clapSource'),
-      \ 'sink': function('macrobatics#selectNamedMacro')
-      \ }
-
-let g:clap_provider_macrobatics_play = {
+let g:clap_provider_macrobatics = {
       \ 'source': function('s:clapSource'),
       \ 'sink': function('s:clapPlaySink')
       \ }
