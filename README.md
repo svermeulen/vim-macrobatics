@@ -260,9 +260,9 @@ Note also that the `!` option must be added to Neovims `shada` setting for this 
 
 ## Parameterized Macros
 
-Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these paramters.
+Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.
 
-For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can do this by doing the following:
+For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
 
 * Fill in a temporary value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
 * Record the macro, making use of the 'n' register to replace the current method name
@@ -293,7 +293,7 @@ let g:Mac_NamedMacroParametersByFileType = {
 \ }
 ```
 
-In most cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it would be more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can do these things in the following examples:
+In most cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it is more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can refer to the following examples to learn how these kinds of parameterized macros can be defined:
 
 ```viml
 " An example of using a hard-coded value
