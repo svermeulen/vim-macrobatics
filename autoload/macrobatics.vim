@@ -112,13 +112,26 @@ function! macrobatics#nameCurrentMacro()
     call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
 
+function! s:makeChoice(values, sink)
+    call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [a:values, a:sink])
+endfunction
+
 function! macrobatics#searchThenPlayNamedMacro(cnt)
-    let cnt = a:cnt > 0 ? a:cnt : 1
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [cnt])
+    let playCount = a:cnt > 0 ? a:cnt : 1
+    let macroNames = macrobatics#getNamedMacros()
+    call s:makeChoice(macroNames, {choice -> macrobatics#playNamedMacro(choice, playCount)})
 endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
+    let macroNames = macrobatics#getNamedMacros()
+    call s:makeChoice(macroNames, function('macrobatics#selectNamedMacro'))
+endfunction
+
+function s:paramValueSink(reg, value)
+    call s:assert(len(a:reg) == 1, "Expected register value for macro parameter")
+    call s:assert(a:reg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
+    call setreg(a:reg, a:value)
+    call s:queuedMacroNext()
 endfunction
 
 function s:queuedMacroNext()
@@ -144,17 +157,13 @@ function s:queuedMacroNext()
             call s:echo("Cancelled macro '%s'", info.macroName)
             return
         endif
-        call s:assert(len(paramReg) == 1, "Expected register paramValue for macro parameter")
-        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
-        call setreg(paramReg, paramValue)
-        call s:queuedMacroNext()
+        call s:paramValueSink(paramReg, paramValue)
     else
         call s:assert(type(paramInfo) == v:t_dict,
-            \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", s:queuedMacroName, paramReg)
+            \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", info.macroName, paramReg)
 
-        let paramName = paramInfo.name
-
-        call s:assert(0, "TODO - use fuzzy search from list")
+        call s:echo("Choose value for '%s'", paramInfo.name)
+        call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramReg, choice)})
     endif
 endfunction
 
@@ -183,7 +192,7 @@ function! s:updateMacroRegisterForNamedMacro(name)
     call macrobatics#setCurrent(macInfo.data)
 endfunction
 
-function! s:processNamedMacro(macroName, autoPlay, cnt)
+function! s:processNamedMacro(macroName, autoplay, cnt)
     let s:queuedMacroInfo = {
         \   'macroName': a:macroName,
         \   'autoplay': a:autoplay,
