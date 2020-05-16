@@ -14,6 +14,9 @@ let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
 let s:recordInfo = v:null
+let s:queuedMacroName = v:null
+let s:queuedMacroCount = v:null
+let s:paramInputQueue = v:null
 
 nnoremap <silent> <plug>(Mac__OnPlayMacroCompleted) :<c-u>call <sid>onPlayMacroCompleted()<cr>
 nnoremap <silent> <plug>(Mac__RepeatLast) :<c-u>call <sid>repeatLast()<cr>
@@ -120,14 +123,44 @@ function! macrobatics#searchThenSelectNamedMacro()
     call call("macrobatics#" . s:getFuzzySearchMethod() . "#selectNamedMacro", [])
 endfunction
 
-function! macrobatics#playNamedMacro(name, ...)
-    if !s:inputMacroParameters(a:name)
-        call s:echo("Cancelled macro '%s'", a:name)
+function s:updateNextParameterRegThenPlay()
+    if len(s:paramInputQueue) == 0
+        call macrobatics#selectNamedMacro(s:queuedMacroName)
+        call macrobatics#play(s:defaultMacroReg, s:queuedMacroCount)
         return
     endif
-    let cnt = a:0 ? a:1 : 1
-    call macrobatics#selectNamedMacro(a:name)
-    call macrobatics#play(s:defaultMacroReg, cnt)
+
+    let item = remove(s:paramInputQueue, 0)
+    let paramReg = item[0]
+    let paramInfo = item[1]
+    let paramInfoType = type(paramInfo)
+
+    if paramInfoType == v:t_string
+        let paramName = paramInfo
+        let value = input(paramName . ": ")
+        if len(value) == 0
+            call s:echo("Cancelled macro '%s'", s:queuedMacroName)
+            return
+        endif
+        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
+        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
+        call setreg(paramReg, value)
+        call s:updateNextParameterRegThenPlay()
+    else
+        call s:assert(paramInfoType == v:t_dict,
+            \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", s:queuedMacroName, paramReg)
+
+        let paramName = paramInfo.name
+
+        call s:assert(0, "TODO - use fuzzy search from list")
+    endif
+endfunction
+
+function! macrobatics#playNamedMacro(name, ...)
+    let s:queuedMacroName = a:name
+    let s:queuedMacroCount = a:0 ? a:1 : 1
+    let s:paramInputQueue = s:getMacroParametersInfo(a:name)
+    call s:updateNextParameterRegThenPlay()
 endfunction
 
 function! macrobatics#selectNamedMacro(name)
@@ -494,22 +527,6 @@ function s:getMacroParametersInfo(name)
 
     let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
     return get(globalMap, a:name, {})
-endfunction
-
-function s:inputMacroParameters(name)
-    let params = s:getMacroParametersInfo(a:name)
-    for item in items(params)
-        let paramReg = item[0]
-        let paramName = item[1]
-        let value = input(paramName . ": ")
-        if len(value) == 0
-            return 0
-        endif
-        call s:assert(len(paramReg) == 1, "Expected register value for macro parameter")
-        call s:assert(paramReg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
-        call setreg(paramReg, value)
-    endfor
-    return 1
 endfunction
 
 function s:loadNamedMacroData(filePath)
