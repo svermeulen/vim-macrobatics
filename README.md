@@ -181,6 +181,54 @@ The values are:
 * `g:Mac_NamedMacroParameters` - The list of [named parameters](#parameterized-macros) associated with any macros that you want to be parameterized.
 * `g:Mac_NamedMacroParametersByFileType` - The list of [named parameters](#parameterized-macros) associated with any filetype specific macros that you want to be parameterized.
 
+## FAQ
+
+* ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
+
+    The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
+
+
+* ### _The repeat button '.' doesn't work when executed immediately after undo_
+
+    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
+
+
+* ### _Can I execute a macro from within a macro?_
+
+    Yes!  This can be quite useful.  You can do this by either triggering a named macro via a key binding, or by triggering another macro that is stored in a different register than the current macro.
+
+
+* ### _Why did my macro stop working suddenly?_
+
+    This was probably because a mapping that was used inside the macro was changed.  One of the dangers of using macros is that it uses "recursive" mappings.  In other words, macros depend heavily on the current key bindings in place at the time the macro was recorded.   If you later modify one of the bindings that was used inside the macro, the macro will break.  In this case you will need to re-record the macro.
+
+
+* ### _Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?_
+
+    Yes, this approach usually works as well.  Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
+
+    ```viml
+    nmap <leader>t [MACRO CONTENTS]
+    ```
+
+    Note that we need to use nmap here in case our macro uses any non-default mappings.  To actually fill in the value for `[MACRO CONTENTS]`, you can paste from the `m` register like this:
+
+    ```viml
+    nmap <leader>t ^R^Rm
+    ```
+
+    We type `^R^Rm` to paste the raw values from the macro.  Alternatively, you could create a function for your macro instead:
+
+    ```viml
+    function s:doSomething()
+        normal [MACRO CONTENTS]
+    endfunction
+
+    nnoremap <leader>t :<c-u>call <sid>doSomething()<cr>
+    ```
+
+    However, depending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
+
 # Advanced Topics
 
 ## File Type Macros
@@ -245,6 +293,91 @@ let g:Mac_NamedMacroParametersByFileType = {
 \ }
 ```
 
+In most cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it would be more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can do these things in the following examples:
+
+```viml
+" An example of using a hard-coded value
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'value': 'bar'
+    \     },
+    \   },
+    \ }
+
+" An example of using a list of values
+" This will trigger either fzf or vim-clap to choose a value in the given list
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'choices': ['bar', 'qux', 'gorp']
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom function to retrieve the value
+function! s:getFoo(argName)
+    return 'bar'
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'valueProvider': function('s:getFoo')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom async function to retrieve the value
+function! s:getFoo(argName, sink)
+    call a:sink('bar')
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'is_async': 1,
+    \       'valueProvider': function('s:getFoo')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom function to retrieve the list of choices
+" This will trigger either fzf or vim-clap to choose a value in the given list
+function! s:getFooChoices(argName)
+    return ['foo', 'bar', 'qux']
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'choicesProvider': function('s:getFooChoices')
+    \     },
+    \   },
+    \ }
+
+" An example of using a custom async function to retrieve the list of choices
+" This will trigger either fzf or vim-clap to choose a value in the given list
+function! s:getFooChoices(argName, sink)
+    call a:sink(['foo', 'bar', 'qux'])
+endfunction
+
+let g:Mac_NamedMacroParameters = {
+    \   'my-custom-macro1': {
+    \     'n': {
+    \       'name': 'foo',
+    \       'is_async': 1,
+    \       'choicesProvider': function('s:getFooChoices')
+    \     },
+    \   },
+    \ }
+```
+
 ## Moving registers
 
 In some cases you might find yourself making use of multiple macros at once.  In this case, it can be cumbersome to navigate the macro buffer history back and forth every time you want to swap the active macro between indexes in the history buffer.  A better way to handle this case is to save one or more of these macros to named registers and execute them that way instead.  Macrobatics provides a shortcut mapping that can do this.  For example, if you add the following to your `.vimrc`:
@@ -259,52 +392,4 @@ Then, the next time you want to give a name to the active macro, you can execute
 Note that in addition to replaying the `x` macro with `"xq`, you can also re-record with `"xgq`, append with `"x<leader>ma`, or prepend with `"x<leader>mp`.
 
 Note also that you might consider [naming the current macro](#named-macros) instead.  However, this can still be useful when juggling multiple temporary maps at once that you don't need to use again.
-
-## FAQ
-
-* ### _How do I select a specific macro from the history after executing `:DisplayMacroHistory`?_
-
-    The easiest way to do this is to execute `x[m` where `x` is the number associated with the macro as displayed by `:DisplayMacroHistory`
-
-
-* ### _The repeat button '.' doesn't work when executed immediately after undo_
-
-    <a id="repeat-bug"></a>This is due to a [bug with tpope/vim-repeat](https://github.com/tpope/vim-repeat/pull/66).  You can use [my fork](https://github.com/svermeulen/vim-repeat) instead which contains the fix.
-
-
-* ### _Can I execute a macro from within a macro?_
-
-    Yes!  This can be quite useful.  You can do this by either triggering a named macro via a key binding, or by triggering another macro that is stored in a different register than the current macro.
-
-
-* ### _Why did my macro stop working suddenly?_
-
-    This was probably because a mapping that was used inside the macro was changed.  One of the dangers of using macros is that it uses "recursive" mappings.  In other words, macros depend heavily on the current key bindings in place at the time the macro was recorded.   If you later modify one of the bindings that was used inside the macro, the macro will break.  In this case you will need to re-record the macro.
-
-
-* ### _Why should I use a named macro for a custom key map?  Why can't I just directly map to the contents of the macro register?_
-
-    Yes, this approach usually works as well.  Assuming the macro you want to bind is stored in the `m` register, you can accomplish this by adding the following to your `.vimrc`:
-
-    ```viml
-    nmap <leader>t [MACRO CONTENTS]
-    ```
-
-    Note that we need to use nmap here in case our macro uses any non-default mappings.  To actually fill in the value for `[MACRO CONTENTS]`, you can paste from the `m` register like this:
-
-    ```viml
-    nmap <leader>t ^R^Rm
-    ```
-
-    We type `^R^Rm` to paste the raw values from the macro.  Alternatively, you could create a function for your macro instead:
-
-    ```viml
-    function s:doSomething()
-        normal [MACRO CONTENTS]
-    endfunction
-
-    nnoremap <leader>t :<c-u>call <sid>doSomething()<cr>
-    ```
-
-    However, depending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
 
