@@ -306,5 +306,5 @@ Note also that you might consider [naming the current macro](#named-macros) inst
     nnoremap <leader>t :<c-u>call <sid>doSomething()<cr>
     ```
 
-    However, dependending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
+    However, depending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
 
