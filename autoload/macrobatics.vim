@@ -162,8 +162,31 @@ function s:queuedMacroNext()
         call s:assert(type(paramInfo) == v:t_dict,
             \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", info.macroName, paramReg)
 
-        call s:echo("Choose value for '%s'", paramInfo.name)
-        call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramReg, choice)})
+        if has_key(paramInfo, 'value')
+            call s:paramValueSink(paramReg, paramInfo.value)
+        elseif has_key(paramInfo, 'valueProvider')
+            if get(paramInfo, 'is_async', 0)
+                call paramInfo.valueProvider(paramInfo.name, {choice -> s:paramValueSink(paramReg, choice)})
+            else
+                call s:paramValueSink(paramReg, paramInfo.valueProvider(paramInfo.name))
+            endif
+        elseif has_key(paramInfo, 'choices')
+            call s:echo("Choose value for '%s'", paramInfo.name)
+            call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramReg, choice)})
+        elseif has_key(paramInfo, 'choicesProvider')
+            if get(paramInfo, 'is_async', 0)
+                call s:echo("Choose value for '%s'", paramInfo.name)
+                call paramInfo.choicesProvider(paramInfo.name, {
+                    \ choices -> s:makeChoice(
+                        \ choices, {choice -> s:paramValueSink(paramReg, choice)})})
+            else
+                call s:makeChoice(paramInfo.choicesProvider(paramInfo.name),
+                    \ {choice -> s:paramValueSink(paramReg, choice)})
+            endif
+        else
+            call s:assert(0,
+                \ "Unexpected value for macro '%s' and register '%s'", info.macroName, paramReg)
+        endif
     endif
 endfunction
 
