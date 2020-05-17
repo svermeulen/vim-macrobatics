@@ -1,6 +1,6 @@
 
 function! s:getDefaultFzfOptions()
-    if has('nvim') || version >= 800
+    if has('nvim') || version >= 802
         return {'window': {'width': 0.75, 'height': 0.6}}
     endif
     return {'down': '40%'}
