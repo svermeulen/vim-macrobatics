@@ -166,6 +166,9 @@ let g:Mac_NamedMacrosDirectory = "~/.config/macrobatics"
 " let g:Mac_NamedMacrosDirectory = "~/AppData/Local/macrobatics"
 let g:Mac_NamedMacroParameters = {}
 let g:Mac_NamedMacroParametersByFileType = {}
+let g:Mac_FzfOptions = {'window': {'width': 0.75, 'height': 0.6}}
+" Or for vim < 8:
+" let g:Mac_FzfOptions = {'down': '40%'}
 ```
 
 Note that including these lines in your `.vimrc` will have zero effect, because these are already the default values.  So you'll only need to include the lines which you customize.
@@ -180,6 +183,7 @@ The values are:
 * `g:Mac_NamedMacrosDirectory` - The directory to store the files associated with [named macros](#named-macros)
 * `g:Mac_NamedMacroParameters` - The list of [named parameters](#parameterized-macros) associated with any macros that you want to be parameterized.
 * `g:Mac_NamedMacroParametersByFileType` - The list of [named parameters](#parameterized-macros) associated with any filetype specific macros that you want to be parameterized.
+* `g:Mac_FzfOptions` - The options used to configure the fzf window that is used to choose named macros / named parameters.
 
 ## FAQ
 
