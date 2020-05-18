@@ -252,7 +252,7 @@ Note here that we have changed the keys we used with `Mac_NameCurrentMacro` from
 
 Now, when we record a named macro that is file-type-specific, we can execute `<leader>mnf` and it will save to a file-type specific directory.
 
-We can then execute `<leader>ms` or `<leader>me` (assuming default mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
+We can then execute `<leader>ms` or `<leader>me` (assuming recommended mappings) and we will get both the global list of macros as well as any file-type specific macros to choose from.
 
 ## <a id="shada-support"></a>Persistent/Shared History
 
@@ -264,7 +264,7 @@ Note also that the `!` option must be added to Neovims `shada` setting for this 
 
 ## Parameterized Macros
 
-Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.
+Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save placeholder parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.
 
 For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
 
@@ -286,11 +286,11 @@ Note that you can use any register in place of 'n' here, including the default `
 You can also add parameter information to filetype specific macros.  For example:
 ```viml
 let g:Mac_NamedMacroParametersByFileType = {
-\   'js': { 
+\   'javascript': { 
 \     'rename-current-method': { 'n': 'New Method Name' },
 \     'create-method': { 'n': 'Method Name' },
 \   },
-\   'py': { 
+\   'python': { 
 \     'rename-current-method': { 'n': 'New Method Name' },
 \     'create-method': { 'n': 'Method Name' },
 \   },
