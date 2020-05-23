@@ -307,31 +307,31 @@ Macrobatics also has built in support for using 'named parameters' with your nam
 
 For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
 
-* Fill in a temporary value for the 'n' register that will represent the new name for the method (eg. by executing `"nyiw`)
-* Record the macro, making use of the 'n' register to replace the current method name
+* Fill in a temporary value for the 'x' register that will represent the new name for the method (eg. by executing `"nyiw`)
+* Record the macro, making use of the 'x' register to replace the current method name
 * Name the current macro `rename-current-method` as [described above](#named-macros).  It is now stored persistently into the macros folder.
 * Add the following to your `.vimrc`:
     ```viml
     let g:Mac_NamedMacroParameters = {
-    \   'rename-current-method': { 'n': 'New Name' }
+    \   'rename-current-method': { 'x': 'New Name' }
     \ }
     ```
 * Restart vim, or re-source your `.vimrc`
 * Play the `rename-current-method` macro
-* You should then be prompted for a "New Name" value.  The 'n' register will then be set to whatever you type here, and then the macro will be executed.
+* You should then be prompted for a "New Name" value.  The 'x' register will then be set to whatever you type here, and then the macro will be executed.
 
-Note that you can use any register in place of 'n' here, including the default `"` register.
+Note that you can use any register in place of 'x' here, including the default `"` register.
 
 You can also add parameter information to filetype specific macros.  For example:
 ```viml
 let g:Mac_NamedMacroParametersByFileType = {
 \   'javascript': { 
-\     'rename-current-method': { 'n': 'New Method Name' },
-\     'create-method': { 'n': 'Method Name' },
+\     'rename-current-method': { 'x': 'New Method Name' },
+\     'create-method': { 'x': 'Method Name' },
 \   },
 \   'python': { 
-\     'rename-current-method': { 'n': 'New Method Name' },
-\     'create-method': { 'n': 'Method Name' },
+\     'rename-current-method': { 'x': 'New Method Name' },
+\     'create-method': { 'x': 'Method Name' },
 \   },
 \ }
 ```
@@ -342,7 +342,7 @@ In most cases you will just need to assign a name to the register, and then let 
 " An example of using a hard-coded value
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'value': 'bar'
     \     },
@@ -353,7 +353,7 @@ let g:Mac_NamedMacroParameters = {
 " This will trigger either fzf or vim-clap to choose a value in the given list
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'choices': ['bar', 'qux', 'gorp']
     \     },
@@ -367,7 +367,7 @@ endfunction
 
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'valueProvider': function('s:getFoo')
     \     },
@@ -382,7 +382,7 @@ endfunction
 
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'is_async': 1,
     \       'valueProvider': function('s:getFoo')
@@ -398,7 +398,7 @@ endfunction
 
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'choicesProvider': function('s:getFooChoices')
     \     },
@@ -414,7 +414,7 @@ endfunction
 
 let g:Mac_NamedMacroParameters = {
     \   'my-custom-macro1': {
-    \     'n': {
+    \     'x': {
     \       'name': 'foo',
     \       'is_async': 1,
     \       'choicesProvider': function('s:getFooChoices')
