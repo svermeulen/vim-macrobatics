@@ -268,7 +268,7 @@ Note also that the `!` option must be added to Neovims `shada` setting for this 
 
 If you use this plugin for awhile, you might have some number of bindings that looks like this:
 
-```
+```viml
 nnoremap <leader>tf :call macrobatics#playNamedMacro('foo')<cr>
 nnoremap <leader>tb :call macrobatics#playNamedMacro('bar')<cr>
 ```
