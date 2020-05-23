@@ -53,7 +53,7 @@ function! macrobatics#getHistory()
 endfunction
 
 function! macrobatics#setCurrent(entry)
-    call setreg(s:defaultMacroReg, a:entry)
+    call s:updateMacroReg(s:defaultMacroReg, a:entry)
     call s:addToHistory(a:entry)
 endfunction
 
@@ -93,7 +93,7 @@ function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
         let content = history[a:cnt]
     endif
 
-    call setreg(a:reg, content)
+    call s:updateMacroReg(a:reg, content)
     call s:echo("Stored to '%s' register: %s", a:reg, s:formatMacro(content))
 endfunction
 
@@ -168,9 +168,15 @@ function! macrobatics#searchThenSelectNamedMacro()
     call s:chooseNamedMacro(function('macrobatics#selectNamedMacro'))
 endfunction
 
+function! s:updateMacroReg(reg, value)
+    " It's important that we always set in charwise mode, otherwise it can add unnecessary
+    " newline characters to the end of the macro, when it ends with a ^M character
+    call setreg(a:reg, a:value, 'c')
+endfunction
+
 function s:paramValueSink(reg, value)
     call s:assert(len(a:reg) == 1, "Expected register value for macro parameter")
-    call setreg(a:reg, a:value)
+    call s:updateMacroReg(a:reg, a:value)
     call s:queuedMacroNext()
 endfunction
 
@@ -253,7 +259,7 @@ function! s:updateMacroRegisterForNamedMacro(name, destinationRegister)
             let macInfo.data = s:loadNamedMacroData(filePath)
         endif
     endif
-    call setreg(a:destinationRegister, macInfo.data)
+    call s:updateMacroReg(a:destinationRegister, macInfo.data)
     if a:destinationRegister == s:defaultMacroReg
         call s:addToHistory(macInfo.data)
     endif
@@ -299,7 +305,7 @@ function! macrobatics#rotate(offset)
     " then it must have changed through a delete operation or directly via setreg etc.
     " In this case, don't rotate and instead just update the default register
     if history[0] != getreg(s:defaultMacroReg)
-        call setreg(s:defaultMacroReg, history[0])
+        call s:updateMacroReg(s:defaultMacroReg, history[0])
         return
     endif
 
@@ -319,7 +325,7 @@ function! macrobatics#rotate(offset)
         endif
     endwhile
 
-    call setreg(s:defaultMacroReg, history[0])
+    call s:updateMacroReg(s:defaultMacroReg, history[0])
     call s:echo("Current Macro: %s", s:formatMacro(history[0]))
 endfunction
 
@@ -335,7 +341,7 @@ function! macrobatics#onRecordingComplete(_)
     let info.recordContent = getreg(info.reg)
     if !(info.appendContents is v:null)
         let s:autoFinishRecordAfterPlay = 1
-        call setreg(info.reg, info.appendContents)
+        call s:updateMacroReg(info.reg, info.appendContents)
         call macrobatics#play(info.reg, 1)
     else
         call s:onRecordingFullyComplete()
@@ -664,9 +670,9 @@ function! s:onRecordingFullyComplete()
     if fullContent == ''
         " In this case, reset the macro register and do not add to history
         " View this as a cancel
-        call setreg(info.reg, info.previousContents)
+        call s:updateMacroReg(info.reg, info.previousContents)
     else
-        call setreg(info.reg, fullContent)
+        call s:updateMacroReg(info.reg, fullContent)
         if !(info.prependContents is v:null) || !(info.appendContents is v:null)
             call s:removeFromHistory(info.previousContents)
         endif
