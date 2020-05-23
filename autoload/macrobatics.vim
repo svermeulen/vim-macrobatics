@@ -113,6 +113,35 @@ function! macrobatics#nameCurrentMacroForFileType()
     call s:saveCurrentMacroToDirectory(saveDir)
 endfunction
 
+function! macrobatics#overwriteNamedMacro(macroName)
+    let filePath = s:findNamedMacroPath(a:macroName)
+    call s:assert(filereadable(filePath))
+    let macroData = getreg(s:defaultMacroReg)
+    call s:saveMacroFile(macroData, filePath)
+    call s:echo("Updated macro with name '%s'", a:macroName)
+endfunction
+
+function s:findNamedMacroPath(macroName)
+    let macroDir = s:findNamedMacroDir(a:macroName)
+    return s:constructMacroPath(macroDir, a:macroName)
+endfunction
+
+function! macrobatics#deleteNamedMacro(macroName)
+    let filePath = s:findNamedMacroPath(a:macroName)
+    if filereadable(filePath)
+        call delete(filePath)
+        call s:echo("Deleted macro with name '%s'", a:macroName)
+    endif
+endfunction
+
+function! macrobatics#searchAndDeleteNamedMacro()
+    call s:chooseNamedMacro({choice -> macrobatics#deleteNamedMacro(choice)})
+endfunction
+
+function! macrobatics#searchAndOverwriteNamedMacro()
+    call s:chooseNamedMacro({choice -> macrobatics#overwriteNamedMacro(choice)})
+endfunction
+
 function! macrobatics#nameCurrentMacro()
     call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
 endfunction
@@ -126,15 +155,17 @@ function! s:makeChoice(values, sink)
     endif
 endfunction
 
+function! s:chooseNamedMacro(sink)
+    call s:makeChoice(macrobatics#getNamedMacros(), a:sink)
+endfunction
+
 function! macrobatics#searchThenPlayNamedMacro(cnt)
     let playCount = a:cnt > 0 ? a:cnt : 1
-    let macroNames = macrobatics#getNamedMacros()
-    call s:makeChoice(macroNames, {choice -> macrobatics#playNamedMacro(choice, playCount)})
+    call s:chooseNamedMacro({choice -> macrobatics#playNamedMacro(choice, playCount)})
 endfunction
 
 function! macrobatics#searchThenSelectNamedMacro()
-    let macroNames = macrobatics#getNamedMacros()
-    call s:makeChoice(macroNames, function('macrobatics#selectNamedMacro'))
+    call s:chooseNamedMacro(function('macrobatics#selectNamedMacro'))
 endfunction
 
 function s:paramValueSink(reg, value)
@@ -532,6 +563,10 @@ function s:echom(...)
     echom call('printf', a:000)
 endfunction
 
+function! s:saveMacroFile(macroData, filePath)
+    call writefile([a:macroData], a:filePath, 'b')
+endfunction
+
 function! s:saveCurrentMacroToDirectory(dirPath)
     let name = input('Macro Name:')
     if len(name) == 0
@@ -550,7 +585,7 @@ function! s:saveCurrentMacroToDirectory(dirPath)
         return
     endif
     let macroData = getreg(s:defaultMacroReg)
-    call writefile([macroData], filePath, 'b')
+    call s:saveMacroFile(macroData, filePath)
     call s:echo("Saved macro with name '%s'", name)
 endfunction
 

@@ -57,7 +57,7 @@ You can also pass a count to the play command to immediately repeat the macro a 
 To view the current history of macros, you can execute `:DisplayMacroHistory`.  By default the history contains a maximum of 10 items, however this is [configurable](#configuration).  You might also consider adding a binding for this:
 
 ```viml
-nmap <leader>md :DisplayMacroHistory<cr>
+nmap <leader>mh :DisplayMacroHistory<cr>
 ```
 
 You will notice that the current macro is displayed alongside the `m` letter (the default value for `g:Mac_DefaultRegister`) and the rest are displayed as indexes into the history buffer.
@@ -124,6 +124,24 @@ nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
 
 Then you can execute `<leader>ms` to set the current macro to the chosen named macro.  This is especially useful when you want to edit a named macro by appending or prepending to it (or simply overwriting it entirely).   You can do this by naming it again using the same name as <a href="#named-macros">described above</a>.
 
+## Updating Named Macros
+
+In many cases you'll want to update some of your saved macros.  You could do this by executing `<plug>(Mac_NameCurrentMacro)` and typing in the exact name of the macro, but this can be error prone.  As an alternative, you can use the fuzzy finder popup to select the macro that you intend to overwrite:
+
+```viml
+" mo = macro overwrite
+nmap <leader>mo <plug>(Mac_SearchForNamedMacroAndOverwrite)
+```
+
+## Deleting Named Macros
+
+Simiarly, you might want to bind a key to delete saved macros using the fuzzy finder:
+
+```viml
+" md = macro delete
+nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
+```
+
 ## Recommended configuration
 
 If you decide to adopt all the recommended bindings discussed above, you can include the following in your `.vimrc`:
@@ -133,7 +151,7 @@ If you decide to adopt all the recommended bindings discussed above, you can inc
 nmap <nowait> q <plug>(Mac_Play)
 nmap <nowait> gq <plug>(Mac_RecordNew)
 
-nmap <leader>md :DisplayMacroHistory<cr>
+nmap <leader>mh :DisplayMacroHistory<cr>
 
 nmap [m <plug>(Mac_RotateBack)
 nmap ]m <plug>(Mac_RotateForward)
@@ -141,9 +159,15 @@ nmap ]m <plug>(Mac_RotateForward)
 nmap <leader>ma <plug>(Mac_Append)
 nmap <leader>mp <plug>(Mac_Prepend)
 
+nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
+
+" mo = macro overwrite
+nmap <leader>mo <plug>(Mac_SearchForNamedMacroAndOverwrite)
+
 " me = macro execute named
 nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
 
+" me = macro select
 nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
 
 nmap <leader>mng <plug>(Mac_NameCurrentMacro)
