@@ -264,6 +264,19 @@ You can also use this feature to sync the macro history across multiple running 
 
 Note also that the `!` option must be added to Neovims `shada` setting for this feature to work.  For example:  `set shada=!,'100,<50,s10,h` (see `:h 'shada'` for details)
 
+## Nested Named Macros
+
+If you use this plugin for awhile, you might have some number of bindings that looks like this:
+
+```
+nnoremap <leader>tf :call macrobatics#playNamedMacro('foo')<cr>
+nnoremap <leader>tb :call macrobatics#playNamedMacro('bar')<cr>
+```
+
+In some cases, you might even record macros where you trigger these bindings.  This is one way to trigger nested named macros.  Note that this should Just Work when doing it this way.
+
+Often though, you won't have keys mapped to named macros and will rely instead on the fuzzy finder popup to select them when you need them.  You might then wonder, can you record a macro in which you trigger the fuzzy finder popup, select another macro, and execute that?   The answer is yes, with an important caveat:  You have to type in the exact name of the macro for this to work.  In other words, when recording a macro where you execute either `<plug>(Mac_SearchForNamedMacroAndSelect)` or `<plug>(Mac_SearchForNamedMacroAndPlay)`, you cannot rely on the fuzzy search selection.  You have to type in the exact name and then hit enter.   If you follow this rule, and then play back the macro, you can have as many nested macros as you like.
+
 ## Parameterized Macros
 
 Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save placeholder parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.

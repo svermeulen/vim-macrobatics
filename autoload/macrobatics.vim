@@ -40,6 +40,10 @@ function! macrobatics#getRecordRegister()
     return s:defaultMacroReg
 endfunction
 
+function! macrobatics#isPlayingMacro()
+    return s:macrosInProgress > 0
+endfunction
+
 function! macrobatics#getHistory()
     if s:saveHistoryToShada
         return g:MACROBATICS_HISTORY
@@ -114,7 +118,12 @@ function! macrobatics#nameCurrentMacro()
 endfunction
 
 function! s:makeChoice(values, sink)
-    call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [a:values, a:sink])
+    if macrobatics#isPlayingMacro()
+        " Require that they type it in exactly when recording, for this to work
+        call a:sink(input(''))
+    else
+        call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [a:values, a:sink])
+    endif
 endfunction
 
 function! macrobatics#searchThenPlayNamedMacro(cnt)
