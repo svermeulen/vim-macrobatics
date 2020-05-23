@@ -22,6 +22,7 @@ nnoremap <plug>(Mac_SearchForNamedMacroAndSelect) :<c-u>call macrobatics#searchT
 nnoremap <plug>(Mac_SearchForNamedMacroAndPlay) :<c-u>call macrobatics#searchThenPlayNamedMacro(v:count)<cr>
 nnoremap <plug>(Mac_SearchForNamedMacroAndOverwrite) :<c-u>call macrobatics#searchAndOverwriteNamedMacro()<cr>
 nnoremap <plug>(Mac_SearchForNamedMacroAndDelete) :<c-u>call macrobatics#searchAndDeleteNamedMacro()<cr>
+nnoremap <plug>(Mac_SearchForNamedMacroAndRename) :<c-u>call macrobatics#searchAndRenameNamedMacro()<cr>
 
 command! -nargs=0 DisplayMacroHistory call macrobatics#displayHistory()
 command! -nargs=0 DisplayNamedMacros call macrobatics#displayNamedMacros()

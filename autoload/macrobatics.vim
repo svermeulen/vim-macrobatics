@@ -113,6 +113,22 @@ function! macrobatics#nameCurrentMacroForFileType()
     call s:saveCurrentMacroToDirectory(saveDir)
 endfunction
 
+function! macrobatics#renameNamedMacro(macroName)
+    let macroDir = s:findNamedMacroDir(a:macroName)
+    let filePath = s:constructMacroPath(macroDir, a:macroName)
+    call s:assert(filereadable(filePath))
+    let newName = input('New Name:')
+    if len(newName) == 0
+        " View this as a cancel
+        return
+    endif
+    let macroData = s:loadNamedMacroData(filePath)
+    call delete(filePath)
+    let newFilePath = s:constructMacroPath(macroDir, newName)
+    call s:saveMacroFile(macroData, newFilePath)
+    call s:echo("Renamed macro from '%s' to '%s'", a:macroName, newName)
+endfunction
+
 function! macrobatics#overwriteNamedMacro(macroName)
     let filePath = s:findNamedMacroPath(a:macroName)
     call s:assert(filereadable(filePath))
@@ -132,6 +148,10 @@ function! macrobatics#deleteNamedMacro(macroName)
         call delete(filePath)
         call s:echo("Deleted macro with name '%s'", a:macroName)
     endif
+endfunction
+
+function! macrobatics#searchAndRenameNamedMacro()
+    call s:chooseNamedMacro({choice -> macrobatics#renameNamedMacro(choice)})
 endfunction
 
 function! macrobatics#searchAndDeleteNamedMacro()
