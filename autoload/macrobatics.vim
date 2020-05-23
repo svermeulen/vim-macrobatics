@@ -117,7 +117,7 @@ function! macrobatics#renameNamedMacro(macroName)
     let macroDir = s:findNamedMacroDir(a:macroName)
     let filePath = s:constructMacroPath(macroDir, a:macroName)
     call s:assert(filereadable(filePath))
-    let newName = input('New Name:')
+    let newName = input('New Name:', a:macroName)
     if len(newName) == 0
         " View this as a cancel
         return

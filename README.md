@@ -142,6 +142,13 @@ Simiarly, you might want to bind a key to delete saved macros using the fuzzy fi
 nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
 ```
 
+Or rename the macro:
+
+```viml
+" mr = macro rename
+nmap <leader>md <plug>(Mac_SearchForNamedMacroAndRename)
+```
+
 ## Recommended configuration
 
 If you decide to adopt all the recommended bindings discussed above, you can include the following in your `.vimrc`:
