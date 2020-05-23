@@ -156,6 +156,7 @@ This is the default configuration:
 
 ```viml
 let g:Mac_DefaultRegister = 'm'
+let g:Mac_PlayByNameRegister = 'n'
 let g:Mac_MaxItems = 10
 let g:Mac_SavePersistently = 0
 let g:Mac_DisplayMacroMaxWidth = 80
@@ -175,6 +176,7 @@ Note that including these lines in your `.vimrc` will have zero effect, because 
 
 The values are:
 * `g:Mac_DefaultRegister` - The default register that macros get stored to when an explicit register is not given.
+* `g:Mac_PlayByNameRegister` - The default register that macros get stored to when triggering <a href="#named-macros">named macros</a> via either `macrobatics#playNamedMacro` or `<plug>(Mac_SearchForNamedMacroAndPlay)`.  This is a different value from `Mac_DefaultRegister` so that `macrobatics#playNamedMacro` or `<plug>(Mac_SearchForNamedMacroAndPlay)` can themselves appear inside other named macros, without clobbering the current macro register.
 * `g:Mac_MaxItems` - The number of macros to store in the history buffer.  This will also control the number of rows displayed when executing the `:Macros` command
 * `g:Mac_SavePersistently` - When true, the macro history will be preserved even when restarting Vim.  Note: Requires Neovim.  See <a href="#shada-support">here</a> for details. Default: `0`.  Note that this setting is only necessary for macros that are in the history buffer.  Macros that you've assigned to a specific register should be automatically restored as part of built-in Vim behaviour.
 * `g:Mac_DisplayMacroMaxWidth` - When macros are displayed by executing the `:Macros` command or when navigating history, this value will control the length at which the displayed macro is truncated at to fit on the screen.
