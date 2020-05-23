@@ -1,5 +1,6 @@
 
 let s:defaultMacroReg = get(g:, 'Mac_DefaultRegister', 'm')
+let s:playByNameMacroReg = get(g:, 'Mac_PlayByNameRegister', 'n')
 let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
@@ -129,7 +130,6 @@ endfunction
 
 function s:paramValueSink(reg, value)
     call s:assert(len(a:reg) == 1, "Expected register value for macro parameter")
-    call s:assert(a:reg != s:defaultMacroReg, "Macro parameter register cannot be the same as the macro register")
     call setreg(a:reg, a:value)
     call s:queuedMacroNext()
 endfunction
@@ -139,9 +139,9 @@ function s:queuedMacroNext()
     call s:assert(!(info is v:null))
 
     if len(info.paramInputQueue) == 0
-        call s:updateMacroRegisterForNamedMacro(info.macroName)
+        call s:updateMacroRegisterForNamedMacro(info.macroName, info.destinationRegister)
         if (info.autoplay)
-            call macrobatics#play(s:defaultMacroReg, info.playCount)
+            call macrobatics#play(info.destinationRegister, info.playCount)
         endif
         return
     endif
@@ -157,6 +157,7 @@ function s:queuedMacroNext()
             call s:echo("Cancelled macro '%s'", info.macroName)
             return
         endif
+        call s:assert(paramReg != info.destinationRegister, "Macro parameter register cannot be the same as the macro register")
         call s:paramValueSink(paramReg, paramValue)
     else
         call s:assert(type(paramInfo) == v:t_dict,
@@ -192,10 +193,10 @@ endfunction
 
 function! macrobatics#playNamedMacro(name, ...)
     let playCount = a:0 ? a:1 : 1
-    call s:processNamedMacro(a:name, 1, playCount)
+    call s:processNamedMacro(a:name, 1, s:playByNameMacroReg, playCount)
 endfunction
 
-function! s:updateMacroRegisterForNamedMacro(name)
+function! s:updateMacroRegisterForNamedMacro(name, destinationRegister)
     let macroDir = s:findNamedMacroDir(a:name)
     let filePath = s:constructMacroPath(macroDir, a:name)
     let cache = s:getMacroCacheForDir(macroDir)
@@ -212,14 +213,18 @@ function! s:updateMacroRegisterForNamedMacro(name)
             let macInfo.data = s:loadNamedMacroData(filePath)
         endif
     endif
-    call macrobatics#setCurrent(macInfo.data)
+    call setreg(a:destinationRegister, macInfo.data)
+    if a:destinationRegister == s:defaultMacroReg
+        call s:addToHistory(macInfo.data)
+    endif
 endfunction
 
-function! s:processNamedMacro(macroName, autoplay, cnt)
+function! s:processNamedMacro(macroName, autoplay, destinationRegister, cnt)
     let s:queuedMacroInfo = {
         \   'macroName': a:macroName,
         \   'autoplay': a:autoplay,
         \   'playCount': a:cnt,
+        \   'destinationRegister': a:destinationRegister,
         \   'paramInputQueue': items(s:getMacroParametersInfo(a:macroName)),
         \ }
 
@@ -227,7 +232,7 @@ function! s:processNamedMacro(macroName, autoplay, cnt)
 endfunction
 
 function! macrobatics#selectNamedMacro(name)
-    call s:processNamedMacro(a:name, 0, 0)
+    call s:processNamedMacro(a:name, 0, s:defaultMacroReg, 0)
 endfunction
 
 function! macrobatics#onVimEnter()
