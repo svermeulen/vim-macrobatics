@@ -146,7 +146,7 @@ Or rename the macro:
 
 ```viml
 " mr = macro rename
-nmap <leader>md <plug>(Mac_SearchForNamedMacroAndRename)
+nmap <leader>mr <plug>(Mac_SearchForNamedMacroAndRename)
 ```
 
 ## Recommended configuration
@@ -166,10 +166,11 @@ nmap ]m <plug>(Mac_RotateForward)
 nmap <leader>ma <plug>(Mac_Append)
 nmap <leader>mp <plug>(Mac_Prepend)
 
-nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
-
 " mo = macro overwrite
 nmap <leader>mo <plug>(Mac_SearchForNamedMacroAndOverwrite)
+
+nmap <leader>mr <plug>(Mac_SearchForNamedMacroAndRename)
+nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
 
 " me = macro execute named
 nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
