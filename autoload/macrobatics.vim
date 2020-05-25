@@ -11,6 +11,7 @@ let s:defaultFuzzySearchers = ['fzf', 'clap']
 let s:previousCompleteOpt=v:null
 let s:autoFinishRecordAfterPlay = 0
 let s:namedMacroCache = {}
+let s:namedMacrosForSession = {}
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
@@ -76,6 +77,9 @@ endfunction
 function! macrobatics#getNamedMacros()
     let dirs = s:getNamedMacrosDirs()
     let namesSet = {}
+    for name in keys(s:namedMacrosForSession)
+        let namesSet[name] = 1
+    endfor
     for dir in dirs
         for filePath in globpath(dir, "*" . s:macroFileExtension, 0, 1)
             let name = s:getMacroNameFromPath(filePath)
@@ -106,6 +110,24 @@ endfunction
 
 function! macrobatics#saveCurrentMacroToDirectory(dirPath)
     call s:saveCurrentMacroToDirectory(resolve(expand(a:dirPath)))
+endfunction
+
+function! macrobatics#nameCurrentMacroForCurrentSession()
+    let name = input('Macro Name:')
+    if len(name) == 0
+        " View this as a cancel
+        return
+    endif
+    " Without this the echo below appears on the same line as input
+    echo "\r"
+    if has_key(s:namedMacrosForSession, name) && confirm(printf(
+            \ "Found existing macro with name '%s'. Overwrite?", name),
+            \ "&Yes\n&No", 2, "Question") != 1
+        " Any response except yes is viewed as a cancel
+        return
+    endif
+    let s:namedMacrosForSession[name] = getreg(s:defaultMacroReg)
+    call s:echo("Saved macro with name '%s'", name)
 endfunction
 
 function! macrobatics#nameCurrentMacroForFileType()
@@ -263,25 +285,30 @@ function! macrobatics#playNamedMacro(name, ...)
 endfunction
 
 function! s:updateMacroRegisterForNamedMacro(name, destinationRegister)
-    let macroDir = s:findNamedMacroDir(a:name)
-    let filePath = s:constructMacroPath(macroDir, a:name)
-    let cache = s:getMacroCacheForDir(macroDir)
-    let macInfo = get(cache, a:name, v:null)
-    if macInfo is v:null
-        call s:assert(filereadable(filePath),
-            \ "Could not find macro with name '%s'!", a:name)
-        let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
-        let cache[a:name] = macInfo
+    if has_key(s:namedMacrosForSession, a:name)
+        let macroData = s:namedMacrosForSession[a:name]
     else
-        " Auto reload if the file is changed
-        " This would occur when over-writing from the same or different vim instance
-        if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
-            let macInfo.data = s:loadNamedMacroData(filePath)
+        let macroDir = s:findNamedMacroDir(a:name)
+        let filePath = s:constructMacroPath(macroDir, a:name)
+        let cache = s:getMacroCacheForDir(macroDir)
+        let macInfo = get(cache, a:name, v:null)
+        if macInfo is v:null
+            call s:assert(filereadable(filePath),
+                \ "Could not find macro with name '%s'!", a:name)
+            let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
+            let cache[a:name] = macInfo
+        else
+            " Auto reload if the file is changed
+            " This would occur when over-writing from the same or different vim instance
+            if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
+                let macInfo.data = s:loadNamedMacroData(filePath)
+            endif
         endif
+        let macroData = macInfo.data
     endif
-    call s:updateMacroReg(a:destinationRegister, macInfo.data)
+    call s:updateMacroReg(a:destinationRegister, macroData)
     if a:destinationRegister == s:defaultMacroReg
-        call s:addToHistory(macInfo.data)
+        call s:addToHistory(macroData)
     endif
 endfunction
 

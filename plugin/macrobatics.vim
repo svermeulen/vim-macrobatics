@@ -14,6 +14,7 @@ nnoremap <plug>(Mac_CopyCurrentMacroToRegister) :<c-u>call macrobatics#copyCurre
 
 nnoremap <plug>(Mac_NameCurrentMacro) :<c-u>call macrobatics#nameCurrentMacro()<cr>
 nnoremap <plug>(Mac_NameCurrentMacroForFileType) :<c-u>call macrobatics#nameCurrentMacroForFileType()<cr>
+nnoremap <plug>(Mac_NameCurrentMacroForCurrentSession) :<c-u>call macrobatics#nameCurrentMacroForCurrentSession()<cr>
 
 nnoremap <plug>(Mac_RotateBack) :<c-u>call macrobatics#rotate(v:count > 0 ? v:count : 1)<cr>
 nnoremap <plug>(Mac_RotateForward) :<c-u>call macrobatics#rotate(v:count > 0 ? -v:count : -1)<cr>

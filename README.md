@@ -166,20 +166,15 @@ nmap ]m <plug>(Mac_RotateForward)
 nmap <leader>ma <plug>(Mac_Append)
 nmap <leader>mp <plug>(Mac_Prepend)
 
-" mo = macro overwrite
-nmap <leader>mo <plug>(Mac_SearchForNamedMacroAndOverwrite)
-
-nmap <leader>mr <plug>(Mac_SearchForNamedMacroAndRename)
-nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
-
-" me = macro execute named
-nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
-
-" me = macro select
-nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
-
 nmap <leader>mng <plug>(Mac_NameCurrentMacro)
 nmap <leader>mnf <plug>(Mac_NameCurrentMacroForFileType)
+nmap <leader>mns <plug>(Mac_NameCurrentMacroForCurrentSession)
+
+nmap <leader>mo <plug>(Mac_SearchForNamedMacroAndOverwrite)
+nmap <leader>mr <plug>(Mac_SearchForNamedMacroAndRename)
+nmap <leader>md <plug>(Mac_SearchForNamedMacroAndDelete)
+nmap <leader>me <plug>(Mac_SearchForNamedMacroAndPlay)
+nmap <leader>ms <plug>(Mac_SearchForNamedMacroAndSelect)
 ```
 
 ## Configuration
@@ -268,6 +263,14 @@ The values are:
     However, depending on your platform and the types of key presses used during the macro, it may not be possible to represent the macro correctly as text inside your `.vimrc`.  This is why it's often easier and more reliable to use [named macros instead](#named-macros) which do not suffer from this problem (because named macros are stored into binary files)
 
 # Advanced Topics
+
+## Temporary Named Macros
+
+In some cases you might have a macro that is very ad-hoc and only really needed during your current Vim session.  In these cases you don't want to save it as a global macro, so you can use a binding like the following instead:
+
+```viml
+nmap <leader>mns <plug>(Mac_NameCurrentMacroForCurrentSession)
+```
 
 ## File Type Macros
 
