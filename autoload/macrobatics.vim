@@ -313,12 +313,16 @@ function! s:updateMacroRegisterForNamedMacro(name, destinationRegister)
 endfunction
 
 function! s:processNamedMacro(macroName, autoplay, destinationRegister, cnt)
+    let paramInfoList = s:getMacroParametersInfo(a:macroName)
+    call s:assert(type(paramInfoList) == v:t_list,
+        \ "Invalid type given for named parameter info for macro '" . a:macroName 
+        \ . "'.  In previous versions of macrobatics this was a dictionary but is now required to be a list")
     let s:queuedMacroInfo = {
         \   'macroName': a:macroName,
         \   'autoplay': a:autoplay,
         \   'playCount': a:cnt,
         \   'destinationRegister': a:destinationRegister,
-        \   'paramInputQueue': items(s:getMacroParametersInfo(a:macroName)),
+        \   'paramInputQueue': copy(paramInfoList),
         \ }
 
     call s:queuedMacroNext()
