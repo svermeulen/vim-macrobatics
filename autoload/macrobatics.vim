@@ -5,6 +5,7 @@ let s:maxItems = get(g:, 'Mac_MaxItems', 10)
 let s:saveHistoryToShada = get(g:, 'Mac_SavePersistently', 0)
 let s:displayMacroMaxWidth = get(g:, 'Mac_DisplayMacroMaxWidth', 80)
 let s:macroFileExtension = get(g:, 'Mac_NamedMacroFileExtension', '.bin')
+let s:macroParameterInfoFileExtension = get(g:, 'Mac_NamedMacroParameterInfoFileExtension', '.txt')
 let s:fuzzySearcher =  get(g:, 'Mac_NamedMacroFuzzySearcher', v:null)
 let s:globalNamedMacrosSaveDirectory = v:null
 let s:defaultFuzzySearchers = ['fzf', 'clap']
@@ -566,6 +567,10 @@ function! s:constructMacroPath(directoryPath, name)
     return a:directoryPath . '/' . a:name . s:macroFileExtension
 endfunction
 
+function! s:constructMacroParameterFilePath(directoryPath, name)
+    return a:directoryPath . '/' . a:name . s:macroParameterInfoFileExtension
+endfunction
+
 function! s:getMacroNameFromPath(filePath)
     let matchIndex = match(a:filePath, '\v[\\/]\zs[^\\/]*' . s:macroFileExtension . '$')
     call s:assert(matchIndex != -1)
@@ -624,9 +629,63 @@ function! s:saveMacroFile(macroData, filePath)
     call writefile([a:macroData], a:filePath, 'b')
 endfunction
 
+function! s:saveMacroParameterFile(paramInfo, filePath)
+    call writefile([string(a:paramInfo)], a:filePath)
+endfunction
+
+function! s:promptForParameterInfo()
+    let result = []
+    while v:true
+        let prompt = ""
+        if len(result) == 0
+            let prompt = "Add parameters?"
+        else
+            let prompt = "Add another parameter?"
+        endif
+
+        let choice = confirm(prompt, "&Yes\n&No", 2, "Question")
+
+        if choice == 0
+            return v:null
+        endif
+
+        if choice != 1
+            break
+        endif
+
+        let paramInfo = {}
+
+        while v:true
+            let paramInfo.register = input('Parameter Register: ')
+
+            if len(paramInfo.register) == 0
+                " interpret this as a cancel
+                return v:null
+            endif
+
+            if len(paramInfo.register) != 1
+                echo "\nInvalid register given.  Please try again"
+            else
+                break
+            endif
+        endwhile
+
+        let paramInfo.name = input('Parameter Name: ')
+
+        if len(paramInfo.name) == 0
+            " interpret this as a cancel
+            return v:null
+        endif
+
+        call add(result, paramInfo)
+    endwhile
+    return result
+endfunction
+
 function! s:saveCurrentMacroToDirectory(dirPath)
     let name = input('Macro Name:')
     if len(name) == 0
+        echo "Save macro cancelled"
         " View this as a cancel
         return
     endif
@@ -634,15 +693,35 @@ function! s:saveCurrentMacroToDirectory(dirPath)
     echo "\r"
     " Ensure directory exists
     call mkdir(a:dirPath, "p", 0755)
-    let filePath = s:constructMacroPath(a:dirPath, name)
-    if filereadable(filePath) && confirm(
-            \ printf("Found existing macro with name '%s'. Overwrite?", name),
-            \ "&Yes\n&No", 2, "Question") != 1
-        " Any response except yes is viewed as a cancel
-        return
+    let dataFilePath = s:constructMacroPath(a:dirPath, name)
+    let paramFilePath = s:constructMacroParameterFilePath(a:dirPath, name)
+    let overwriteParamFile = v:true
+    if filereadable(dataFilePath)
+        if confirm(
+                \ printf("Found existing macro with name '%s'. Overwrite?", name),
+                \ "&Yes\n&No", 2, "Question") != 1
+                " Any response except yes is viewed as a cancel
+            echo "Save macro cancelled"
+            return
+        endif
+        if filereadable(paramFilePath)
+            let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
+            if choice == 0
+                echo "Save macro cancelled"
+                return
+            endif
+            let overwriteParamFile = choice == 1
+        endif
+    endif
+    let paramInfo = []
+    if overwriteParamFile
+        let paramInfo = s:promptForParameterInfo()
     endif
     let macroData = getreg(s:defaultMacroReg)
-    call s:saveMacroFile(macroData, filePath)
+    call s:saveMacroFile(macroData, dataFilePath)
+    if len(paramInfo) > 0
+        call s:saveMacroParameterFile(paramInfo, paramFilePath)
+    endif
     call s:echo("Saved macro with name '%s'", name)
 endfunction
 
@@ -665,6 +744,24 @@ function! s:getFuzzySearchMethod()
 endfunction
 
 function s:getMacroParametersInfo(name)
+    let settingsInfo = s:tryGetMacroParametersInfoFromSettings(a:name)
+    let storedInfo = s:tryGetMacroParametersInfoFromSaveFile(a:name)
+    call s:assert(storedInfo == v:null || settingsInfo == v:null,
+        \ "Found multiple sources for parameter info for named macro '%s'", a:name)
+    if storedInfo != v:null
+        return storedInfo
+    endif
+    if settingsInfo != v:null
+        return settingsInfo
+    endif
+    return []
+endfunction
+
+function s:tryGetMacroParametersInfoFromSaveFile(name)
+    " todo
+endfunction
+
+function s:tryGetMacroParametersInfoFromSettings(name)
     let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
     if has_key(bufferLocalMap, a:name)
         return bufferLocalMap[a:name]
@@ -679,7 +776,7 @@ function s:getMacroParametersInfo(name)
     endfor
 
     let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
-    return get(globalMap, a:name, {})
+    return get(globalMap, a:name, v:null)
 endfunction
 
 function s:loadNamedMacroData(filePath)
