@@ -171,16 +171,12 @@ function! macrobatics#renameNamedMacro(macroName)
 endfunction
 
 function! macrobatics#overwriteNamedMacro(macroName)
-    let filePath = s:findNamedMacroPath(a:macroName)
+    let macroDir = s:findNamedMacroDir(a:macroName)
+    let filePath = s:constructMacroPath(macroDir, a:macroName)
     call s:assert(filereadable(filePath))
     let macroData = getreg(s:defaultMacroReg)
     call s:saveMacroFile(macroData, filePath)
     call s:echo("Updated macro with name '%s'", a:macroName)
-endfunction
-
-function s:findNamedMacroPath(macroName)
-    let macroDir = s:findNamedMacroDir(a:macroName)
-    return s:constructMacroPath(macroDir, a:macroName)
 endfunction
 
 function! macrobatics#deleteNamedMacro(macroName)
@@ -189,7 +185,12 @@ function! macrobatics#deleteNamedMacro(macroName)
         unlet s:namedMacroParamInfosForSession[a:macroName]
         return
     endif
-    let filePath = s:findNamedMacroPath(a:macroName)
+    let macroDir = s:findNamedMacroDir(a:macroName)
+    let paramFilePath = s:constructMacroParameterFilePath(macroDir, a:macroName)
+    if filereadable(paramFilePath)
+        call delete(paramFilePath)
+    endif
+    let filePath = s:constructMacroPath(macroDir, a:macroName)
     if filereadable(filePath)
         call delete(filePath)
         call s:echo("Deleted macro with name '%s'", a:macroName)
@@ -807,7 +808,7 @@ endfunction
 function s:loadNamedMacroParameterInfo(macroDir, name)
     let filePath = s:constructMacroParameterFilePath(a:macroDir, a:name)
     if !filereadable(filePath)
-        return filePath
+        return []
     endif
     let lines = readfile(filePath)
     call s:assert(len(lines) == 1)
