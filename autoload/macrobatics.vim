@@ -171,11 +171,45 @@ function! macrobatics#renameNamedMacro(macroName)
 endfunction
 
 function! macrobatics#overwriteNamedMacro(macroName)
+    if has_key(s:namedMacrosForSession, a:macroName)
+        let paramInfo = s:namedMacroParamInfosForSession[name]
+        let overwriteParams = v:true
+        if len(paramInfo) > 0
+            let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
+            if choice == 0
+                echo "Save macro cancelled"
+                return
+            endif
+            if choice == 1
+                let overwriteParams = v:false
+            endif
+        endif
+        if overwriteParams
+            let s:namedMacroParamInfosForSession[name] = s:promptForParameterInfo()
+        endif
+        let s:namedMacrosForSession[name] = getreg(s:defaultMacroReg)
+        return
+    endif
     let macroDir = s:findNamedMacroDir(a:macroName)
     let filePath = s:constructMacroPath(macroDir, a:macroName)
     call s:assert(filereadable(filePath))
+    let paramFilePath = s:constructMacroParameterFilePath(macroDir, a:macroName)
+    let overwriteParamFile = v:true
+    if filereadable(paramFilePath)
+        let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
+        if choice == 0
+            echo "Save macro cancelled"
+            return
+        endif
+        if choice == 1
+            let overwriteParamFile = v:false
+        endif
+    endif
     let macroData = getreg(s:defaultMacroReg)
     call s:saveMacroFile(macroData, filePath)
+    if overwriteParamFile
+        call s:saveMacroParameterFile(s:promptForParameterInfo(), paramFilePath)
+    endif
     call s:echo("Updated macro with name '%s'", a:macroName)
 endfunction
 
@@ -654,7 +688,10 @@ function! s:saveMacroFile(macroData, filePath)
 endfunction
 
 function! s:saveMacroParameterFile(paramInfo, filePath)
-    call writefile([string(a:paramInfo)], a:filePath)
+    call delete(a:filePath)
+    if len(a:paramInfo) > 0
+        call writefile([string(a:paramInfo)], a:filePath)
+    endif
 endfunction
 
 function! s:promptForParameterInfo()
@@ -739,14 +776,10 @@ function! s:saveCurrentMacroToDirectory(dirPath)
             endif
         endif
     endif
-    let paramInfo = []
-    if overwriteParamFile
-        let paramInfo = s:promptForParameterInfo()
-    endif
     let macroData = getreg(s:defaultMacroReg)
     call s:saveMacroFile(macroData, dataFilePath)
-    if len(paramInfo) > 0
-        call s:saveMacroParameterFile(paramInfo, paramFilePath)
+    if overwriteParamFile
+        call s:saveMacroParameterFile(s:promptForParameterInfo(), paramFilePath)
     endif
     call s:echo("Saved macro with name '%s'", name)
 endfunction
