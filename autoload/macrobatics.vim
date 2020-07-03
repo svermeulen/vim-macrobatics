@@ -13,6 +13,7 @@ let s:previousCompleteOpt=v:null
 let s:autoFinishRecordAfterPlay = 0
 let s:namedMacroCache = {}
 let s:namedMacrosForSession = {}
+let s:namedMacroParamInfosForSession = {}
 let s:macrosInProgress = 0
 let s:repeatMacro = v:null
 let s:isRecording = 0
@@ -116,18 +117,35 @@ endfunction
 function! macrobatics#nameCurrentMacroForCurrentSession()
     let name = input('Macro Name:')
     if len(name) == 0
-        " View this as a cancel
+        echo "Save macro cancelled"
         return
     endif
     " Without this the echo below appears on the same line as input
     echo "\r"
-    if has_key(s:namedMacrosForSession, name) && confirm(printf(
-            \ "Found existing macro with name '%s'. Overwrite?", name),
-            \ "&Yes\n&No", 2, "Question") != 1
-        " Any response except yes is viewed as a cancel
-        return
+    let overwriteParams = v:true
+    if has_key(s:namedMacrosForSession, name)
+        if confirm(printf(
+                \ "Found existing macro with name '%s'. Overwrite?", name),
+                \ "&Yes\n&No", 2, "Question") != 1
+            " Any response except yes is viewed as a cancel
+            echo "Save macro cancelled"
+            return
+        endif
+        if has_key(s:namedMacroParamInfosForSession, name)
+            let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
+            if choice == 0
+                echo "Save macro cancelled"
+                return
+            endif
+            if choice == 1
+                let overwriteParams = v:false
+            endif
+        endif
     endif
     let s:namedMacrosForSession[name] = getreg(s:defaultMacroReg)
+    if overwriteParams
+        let s:namedMacroParamInfosForSession[name] = s:promptForParameterInfo()
+    endif
     call s:echo("Saved macro with name '%s'", name)
 endfunction
 
@@ -287,7 +305,7 @@ function! s:getPlayMacroInfoForName(name)
     if has_key(s:namedMacrosForSession, a:name)
         return {
             \ 'data': s:namedMacrosForSession[a:name],
-            \ 'paramInfoList': [],
+            \ 'paramInfoList': s:namedMacroParamInfosForSession[a:name],
             \ }
     endif
 
@@ -710,7 +728,9 @@ function! s:saveCurrentMacroToDirectory(dirPath)
                 echo "Save macro cancelled"
                 return
             endif
-            let overwriteParamFile = choice == 1
+            if choice == 1
+                let overwriteParamFile = v:false
+            endif
         endif
     endif
     let paramInfo = []
