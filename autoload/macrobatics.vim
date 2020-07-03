@@ -350,27 +350,57 @@ function! s:getPlayMacroInfoForName(name)
     endif
 
     let macroDir = s:findNamedMacroDir(a:name)
-    let filePath = s:constructMacroPath(macroDir, a:name)
+    let dataFilePath = s:constructMacroPath(macroDir, a:name)
+    let paramInfoListFilePath = s:constructMacroParameterFilePath(macroDir, a:name)
     let cache = s:getMacroCacheForDir(macroDir)
-    let macInfo = get(cache, a:name, v:null)
-    if macInfo is v:null
-        call s:assert(filereadable(filePath),
+    let cachedInfo = get(cache, a:name, v:null)
+    if cachedInfo is v:null
+        call s:assert(filereadable(dataFilePath),
             \ "Could not find macro with name '%s'!", a:name)
-        let macInfo = {
-            \ 'data':s:loadNamedMacroData(filePath),
-            \ 'timestamp':getftime(filePath),
-            \ 'paramInfoList':s:loadNamedMacroParameterInfo(macroDir, a:name),
+        let cachedInfo = {
+            \ 'data':s:loadNamedMacroData(dataFilePath),
+            \ 'timestamp':getftime(dataFilePath),
+            \ 'paramInfoListFromFile':s:tryLoadNamedMacroParameterInfoFromFile(paramInfoListFilePath),
             \ }
-        let cache[a:name] = macInfo
+        let cache[a:name] = cachedInfo
     else
+        let currentFileTime = getftime(dataFilePath)
         " Auto reload if the file is changed
         " This would occur when over-writing from the same or different vim instance
-        if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
-            let macInfo.data = s:loadNamedMacroData(filePath)
-            let macInfo.paramInfoList = s:loadNamedMacroParameterInfo(macroDir, a:name)
+        if filereadable(dataFilePath) && cachedInfo.timestamp != currentFileTime
+            let cachedInfo.data = s:loadNamedMacroData(dataFilePath)
+            let cachedInfo.paramInfoListFromFile = s:tryLoadNamedMacroParameterInfoFromFile(paramInfoListFilePath)
+            let cachedInfo.timestamp = currentFileTime
         endif
     endif
-    return macInfo
+    let result = {'data': cachedInfo.data}
+    " Reload from settings every time
+    let result.paramInfoList = s:tryGetMacroParametersInfoFromSettings(a:name)
+    if result.paramInfoList is v:null
+        let result.paramInfoList = cachedInfo.paramInfoListFromFile
+        if result.paramInfoList is v:null
+            let result.paramInfoList = []
+        endif
+    endif
+    return result
+endfunction
+
+function s:tryGetMacroParametersInfoFromSettings(name)
+    let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
+    if has_key(bufferLocalMap, a:name)
+        return bufferLocalMap[a:name]
+    endif
+
+    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersByFileType', {})
+    for fileType in s:getCurrentFileTypes()
+        let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
+        if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)
+            return fileTypeParamMap[a:name]
+        endif
+    endfor
+
+    let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
+    return get(globalMap, a:name, v:null)
 endfunction
 
 function! s:processNamedMacro(macroName, autoplay, destinationRegister, cnt)
@@ -802,48 +832,11 @@ function! s:getFuzzySearchMethod()
     return s:fuzzySearcher
 endfunction
 
-function s:getMacroParametersInfo(name)
-    let settingsInfo = s:tryGetMacroParametersInfoFromSettings(a:name)
-    let storedInfo = s:tryGetMacroParametersInfoFromSaveFile(a:name)
-    call s:assert(storedInfo == v:null || settingsInfo == v:null,
-        \ "Found multiple sources for parameter info for named macro '%s'", a:name)
-    if storedInfo != v:null
-        return storedInfo
+function s:tryLoadNamedMacroParameterInfoFromFile(filePath)
+    if !filereadable(a:filePath)
+        return v:null
     endif
-    if settingsInfo != v:null
-        return settingsInfo
-    endif
-    return []
-endfunction
-
-function s:tryGetMacroParametersInfoFromSaveFile(name)
-    " todo
-endfunction
-
-function s:tryGetMacroParametersInfoFromSettings(name)
-    let bufferLocalMap = get(b:, 'Mac_NamedMacroParameters', {})
-    if has_key(bufferLocalMap, a:name)
-        return bufferLocalMap[a:name]
-    endif
-
-    let fileTypeMap = get(g:, 'Mac_NamedMacroParametersByFileType', {})
-    for fileType in s:getCurrentFileTypes()
-        let fileTypeParamMap = get(fileTypeMap, fileType, v:null)
-        if !(fileTypeParamMap is v:null) && has_key(fileTypeParamMap, a:name)
-            return fileTypeParamMap[a:name]
-        endif
-    endfor
-
-    let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
-    return get(globalMap, a:name, v:null)
-endfunction
-
-function s:loadNamedMacroParameterInfo(macroDir, name)
-    let filePath = s:constructMacroParameterFilePath(a:macroDir, a:name)
-    if !filereadable(filePath)
-        return []
-    endif
-    let lines = readfile(filePath)
+    let lines = readfile(a:filePath)
     call s:assert(len(lines) == 1)
     return eval(lines[0])
 endfunction
@@ -911,7 +904,7 @@ function! s:markForRepeat()
 endfunction
 
 function! s:resetPopupMenu()
-    call s:assert(s:previousCompleteOpt != v:null)
+    call s:assert(!(s:previousCompleteOpt is v:null))
     exec "set completeopt=" . s:previousCompleteOpt 
     let s:previousCompleteOpt=v:null
 endfunction
