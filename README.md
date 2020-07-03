@@ -94,7 +94,9 @@ If you find yourself re-using a macro quite often, then you might consider givin
 nmap <leader>mn <plug>(Mac_NameCurrentMacro)
 ```
 
-Now, every time you create a new macro that you want to name, you can execute `<leader>mn`, and you will then be prompted to type in a name for it.  Then, to add a mapping for it, you can add the following to your `.vimrc`:
+Now, every time you create a new macro that you want to name, you can execute `<leader>mn`, and you will then be prompted to type in a name for it.  You will also be prompted for whether you want to [named parameters](#parameterized-macros) to which you can respond no for now.
+
+Then, to add a mapping for it, you can add the following to your `.vimrc`:
 
 ```viml
 nnoremap <leader>mf :call macrobatics#playNamedMacro('foo')<cr>
@@ -314,7 +316,13 @@ Often though, you won't have keys mapped to named macros and will rely instead o
 
 ## Parameterized Macros
 
-Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that before recording the macro, you manually save placeholder parameter values into vim registers, then make use of those registers during the recording.  Then, before re-playing the the macro, macrobatics will prompt the user to fill in a value for these registers before the macro is executed.
+Macrobatics also has built in support for using 'named parameters' with your named macros.  How this works is that when recording the macro, you make use of certain register values as part of the macro.  Then, when the macro is named and saved, you can indicate which registers need to be filled in before the macro is played.  For example, when executing `<leader>mng` (assuming the default mappings from above), after you choose a name for your macro, it will then also prompt you with the text "Add parameters?".  If you type `Y`, you can then indicate which registers need to be filled in and also give a name for each required parameter.
+
+Then, the next time you execute this macro, you will be prompted to fill in values for all these parameters.
+
+## Specifying Parameterized Macros Via .vimrc
+
+As an alternative to the approach described in the [previous section](parameterized-macros), you can also specify macro parameters in your `.vimrc` file as well.  Normally the previous approach is sufficient, however for more complex cases you might want to take the following approach instead.
 
 For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
 
@@ -324,7 +332,7 @@ For example, let's say you have a macro that renames the current method that you
 * Add the following to your `.vimrc`:
     ```viml
     let g:Mac_NamedMacroParameters = {
-    \   'rename-current-method': { 'x': 'New Name' }
+    \   'rename-current-method': [ { 'register': 'x', 'name': 'New Name' } ]
     \ }
     ```
 * Restart vim, or re-source your `.vimrc`
@@ -337,38 +345,36 @@ You can also add parameter information to filetype specific macros.  For example
 ```viml
 let g:Mac_NamedMacroParametersByFileType = {
 \   'javascript': { 
-\     'rename-current-method': { 'x': 'New Method Name' },
-\     'create-method': { 'x': 'Method Name' },
+\     'rename-current-method': [ {'register': 'x', 'name': 'New Method Name'} ],
+\     'create-method': [ {'register': 'x', 'name': 'Method Name'} ],
 \   },
 \   'python': { 
-\     'rename-current-method': { 'x': 'New Method Name' },
-\     'create-method': { 'x': 'Method Name' },
+\     'rename-current-method': [ {'register': 'x', 'name': 'New Method Name'} ],
+\     'create-method': [ {'register': 'x', 'name': 'Method Name'} ],
 \   },
 \ }
 ```
 
-In most cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it is more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can refer to the following examples to learn how these kinds of parameterized macros can be defined:
+In many cases you will just need to assign a name to the register, and then let macrobatics prompt the user for the value, as shown above.  However, there are some cases where it is more useful to let the user choose from a list of pre-defined values, or have the value for a register come from a custom vimscript function that you define yourself.  You can refer to the following examples to learn how these kinds of parameterized macros can be defined:
 
 ```viml
 " An example of using a hard-coded value
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'value': 'bar'
-    \     },
-    \   },
+    \   'my-custom-macro1': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'value': 'bar'
+    \   }],
     \ }
 
 " An example of using a list of values
 " This will trigger either fzf or vim-clap to choose a value in the given list
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'choices': ['bar', 'qux', 'gorp']
-    \     },
-    \   },
+    \   'my-custom-macro2': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'choices': ['bar', 'qux', 'gorp']
+    \   }],
     \ }
 
 " An example of using a custom function to retrieve the value
@@ -377,12 +383,11 @@ function! s:getFoo(argName)
 endfunction
 
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'valueProvider': function('s:getFoo')
-    \     },
-    \   },
+    \   'my-custom-macro3': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'valueProvider': function('s:getFoo')
+    \   }],
     \ }
 
 " An example of using a custom async function to retrieve the value
@@ -392,13 +397,12 @@ function! s:getFoo(argName, sink)
 endfunction
 
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'is_async': 1,
-    \       'valueProvider': function('s:getFoo')
-    \     },
-    \   },
+    \   'my-custom-macro3': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'is_async': 1,
+    \     'valueProvider': function('s:getFoo')
+    \   }],
     \ }
 
 " An example of using a custom function to retrieve the list of choices
@@ -408,12 +412,11 @@ function! s:getFooChoices(argName)
 endfunction
 
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'choicesProvider': function('s:getFooChoices')
-    \     },
-    \   },
+    \   'my-custom-macro3': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'choicesProvider': function('s:getFooChoices')
+    \   }],
     \ }
 
 " An example of using a custom async function to retrieve the list of choices
@@ -424,13 +427,12 @@ function! s:getFooChoices(argName, sink)
 endfunction
 
 let g:Mac_NamedMacroParameters = {
-    \   'my-custom-macro1': {
-    \     'x': {
-    \       'name': 'foo',
-    \       'is_async': 1,
-    \       'choicesProvider': function('s:getFooChoices')
-    \     },
-    \   },
+    \   'my-custom-macro3': [{
+    \     'register': 'x',
+    \     'name': 'foo',
+    \     'is_async': 1,
+    \     'choicesProvider': function('s:getFooChoices')
+    \   }],
     \ }
 ```
 
