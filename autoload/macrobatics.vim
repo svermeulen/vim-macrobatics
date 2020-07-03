@@ -228,55 +228,53 @@ function s:queuedMacroNext()
     call s:assert(!(info is v:null))
 
     if len(info.paramInputQueue) == 0
-        call s:updateMacroRegisterForNamedMacro(info.macroName, info.destinationRegister)
+        call s:updateMacroReg(info.destinationRegister, info.macroData)
+        if info.destinationRegister == s:defaultMacroReg
+            call s:addToHistory(info.macroData)
+        endif
         if (info.autoplay)
             call macrobatics#play(info.destinationRegister, info.playCount)
         endif
         return
     endif
 
-    let paramItem = remove(info.paramInputQueue, 0)
-    let paramReg = paramItem[0]
-    let paramInfo = paramItem[1]
+    let paramInfo = remove(info.paramInputQueue, 0)
 
-    if type(paramInfo) == v:t_string
-        let paramName = paramInfo
-        let paramValue = input(paramName . ": ")
+    call s:assert(type(paramInfo) == v:t_dict,
+        \ "Expected named parameter info for macro '%s' to be type dictionary", info.macroName)
+
+    if has_key(paramInfo, 'value')
+        call s:paramValueSink(paramInfo.register, paramInfo.value)
+    elseif has_key(paramInfo, 'valueProvider')
+        if get(paramInfo, 'is_async', 0)
+            call paramInfo.valueProvider(paramInfo.name, {choice -> s:paramValueSink(paramInfo.register, choice)})
+        else
+            call s:paramValueSink(paramInfo.register, paramInfo.valueProvider(paramInfo.name))
+        endif
+    elseif has_key(paramInfo, 'choices')
+        call s:echo("Choose value for '%s'", paramInfo.name)
+        call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramInfo.register, choice)})
+    elseif has_key(paramInfo, 'choicesProvider')
+        if get(paramInfo, 'is_async', 0)
+            call s:echo("Choose value for '%s'", paramInfo.name)
+            call paramInfo.choicesProvider(paramInfo.name, {
+                \ choices -> s:makeChoice(
+                    \ choices, {choice -> s:paramValueSink(paramInfo.register, choice)})})
+        else
+            call s:makeChoice(paramInfo.choicesProvider(paramInfo.name),
+                \ {choice -> s:paramValueSink(paramInfo.register, choice)})
+        endif
+    elseif has_key(paramInfo, 'name')
+        let paramValue = input(paramInfo.name . ": ")
         if len(paramValue) == 0
             call s:echo("Cancelled macro '%s'", info.macroName)
             return
         endif
-        call s:assert(paramReg != info.destinationRegister, "Macro parameter register cannot be the same as the macro register")
-        call s:paramValueSink(paramReg, paramValue)
+        call s:assert(paramInfo.register != info.destinationRegister, "Macro parameter register cannot be the same as the macro register")
+        call s:paramValueSink(paramInfo.register, paramValue)
     else
-        call s:assert(type(paramInfo) == v:t_dict,
-            \ "Expected named parameter for macro '%s' and register '%s' to be type dictionary", info.macroName, paramReg)
-
-        if has_key(paramInfo, 'value')
-            call s:paramValueSink(paramReg, paramInfo.value)
-        elseif has_key(paramInfo, 'valueProvider')
-            if get(paramInfo, 'is_async', 0)
-                call paramInfo.valueProvider(paramInfo.name, {choice -> s:paramValueSink(paramReg, choice)})
-            else
-                call s:paramValueSink(paramReg, paramInfo.valueProvider(paramInfo.name))
-            endif
-        elseif has_key(paramInfo, 'choices')
-            call s:echo("Choose value for '%s'", paramInfo.name)
-            call s:makeChoice(paramInfo.choices, {choice -> s:paramValueSink(paramReg, choice)})
-        elseif has_key(paramInfo, 'choicesProvider')
-            if get(paramInfo, 'is_async', 0)
-                call s:echo("Choose value for '%s'", paramInfo.name)
-                call paramInfo.choicesProvider(paramInfo.name, {
-                    \ choices -> s:makeChoice(
-                        \ choices, {choice -> s:paramValueSink(paramReg, choice)})})
-            else
-                call s:makeChoice(paramInfo.choicesProvider(paramInfo.name),
-                    \ {choice -> s:paramValueSink(paramReg, choice)})
-            endif
-        else
-            call s:assert(0,
-                \ "Unexpected value for macro '%s' and register '%s'", info.macroName, paramReg)
-        endif
+        call s:assert(0,
+            \ "Unexpected value for macro '%s' and register '%s'", info.macroName, paramInfo.register)
     endif
 endfunction
 
@@ -285,45 +283,47 @@ function! macrobatics#playNamedMacro(name, ...)
     call s:processNamedMacro(a:name, 1, s:playByNameMacroReg, playCount)
 endfunction
 
-function! s:updateMacroRegisterForNamedMacro(name, destinationRegister)
+function! s:getPlayMacroInfoForName(name)
     if has_key(s:namedMacrosForSession, a:name)
-        let macroData = s:namedMacrosForSession[a:name]
+        return {
+            \ 'data': s:namedMacrosForSession[a:name],
+            \ 'paramInfoList': [],
+            \ }
+    endif
+
+    let macroDir = s:findNamedMacroDir(a:name)
+    let filePath = s:constructMacroPath(macroDir, a:name)
+    let cache = s:getMacroCacheForDir(macroDir)
+    let macInfo = get(cache, a:name, v:null)
+    if macInfo is v:null
+        call s:assert(filereadable(filePath),
+            \ "Could not find macro with name '%s'!", a:name)
+        let macInfo = {
+            \ 'data':s:loadNamedMacroData(filePath),
+            \ 'timestamp':getftime(filePath),
+            \ 'paramInfoList':s:loadNamedMacroParameterInfo(macroDir, a:name),
+            \ }
+        let cache[a:name] = macInfo
     else
-        let macroDir = s:findNamedMacroDir(a:name)
-        let filePath = s:constructMacroPath(macroDir, a:name)
-        let cache = s:getMacroCacheForDir(macroDir)
-        let macInfo = get(cache, a:name, v:null)
-        if macInfo is v:null
-            call s:assert(filereadable(filePath),
-                \ "Could not find macro with name '%s'!", a:name)
-            let macInfo = {'data':s:loadNamedMacroData(filePath), 'timestamp':getftime(filePath)}
-            let cache[a:name] = macInfo
-        else
-            " Auto reload if the file is changed
-            " This would occur when over-writing from the same or different vim instance
-            if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
-                let macInfo.data = s:loadNamedMacroData(filePath)
-            endif
+        " Auto reload if the file is changed
+        " This would occur when over-writing from the same or different vim instance
+        if filereadable(filePath) && macInfo.timestamp != getftime(filePath)
+            let macInfo.data = s:loadNamedMacroData(filePath)
+            let macInfo.paramInfoList = s:loadNamedMacroParameterInfo(macroDir, a:name)
         endif
-        let macroData = macInfo.data
     endif
-    call s:updateMacroReg(a:destinationRegister, macroData)
-    if a:destinationRegister == s:defaultMacroReg
-        call s:addToHistory(macroData)
-    endif
+    return macInfo
 endfunction
 
 function! s:processNamedMacro(macroName, autoplay, destinationRegister, cnt)
-    let paramInfoList = s:getMacroParametersInfo(a:macroName)
-    call s:assert(type(paramInfoList) == v:t_list,
-        \ "Invalid type given for named parameter info for macro '" . a:macroName 
-        \ . "'.  In previous versions of macrobatics this was a dictionary but is now required to be a list")
+    let playInfo = s:getPlayMacroInfoForName(a:macroName)
     let s:queuedMacroInfo = {
+        \   'macroData': playInfo.data,
         \   'macroName': a:macroName,
         \   'autoplay': a:autoplay,
         \   'playCount': a:cnt,
         \   'destinationRegister': a:destinationRegister,
-        \   'paramInputQueue': copy(paramInfoList),
+        \   'paramInputQueue': copy(playInfo.paramInfoList),
         \ }
 
     call s:queuedMacroNext()
@@ -777,6 +777,16 @@ function s:tryGetMacroParametersInfoFromSettings(name)
 
     let globalMap = get(g:, 'Mac_NamedMacroParameters', {})
     return get(globalMap, a:name, v:null)
+endfunction
+
+function s:loadNamedMacroParameterInfo(macroDir, name)
+    let filePath = s:constructMacroParameterFilePath(a:macroDir, a:name)
+    if !filereadable(filePath)
+        return filePath
+    endif
+    let lines = readfile(filePath)
+    call s:assert(len(lines) == 1)
+    return eval(lines[0])
 endfunction
 
 function s:loadNamedMacroData(filePath)
