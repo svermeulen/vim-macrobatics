@@ -184,6 +184,11 @@ function s:findNamedMacroPath(macroName)
 endfunction
 
 function! macrobatics#deleteNamedMacro(macroName)
+    if has_key(s:namedMacrosForSession, a:macroName)
+        unlet s:namedMacrosForSession[a:macroName]
+        unlet s:namedMacroParamInfosForSession[a:macroName]
+        return
+    endif
     let filePath = s:findNamedMacroPath(a:macroName)
     if filereadable(filePath)
         call delete(filePath)
