@@ -155,24 +155,54 @@ function! macrobatics#nameCurrentMacroForFileType()
 endfunction
 
 function! macrobatics#renameNamedMacro(macroName)
-    let macroDir = s:findNamedMacroDir(a:macroName)
-    let filePath = s:constructMacroPath(macroDir, a:macroName)
-    call s:assert(filereadable(filePath))
     let newName = input('New Name:', a:macroName)
+    echo "\r"
     if len(newName) == 0
         " View this as a cancel
+        echo "Save macro cancelled"
         return
     endif
-    let macroData = s:loadNamedMacroData(filePath)
-    call delete(filePath)
+    if has_key(s:namedMacrosForSession, a:macroName)
+        if has_key(s:namedMacrosForSession, newName) && confirm(printf(
+                \ "Found existing macro with name '%s'. Overwrite?", newName),
+                \ "&Yes\n&No", 2, "Question") != 1
+            " Any response except yes is viewed as a cancel
+            echo "Save macro cancelled"
+            return
+        endif
+        let s:namedMacrosForSession[newName] = s:namedMacrosForSession[a:macroName]
+        let s:namedMacroParamInfosForSession[newName] = s:namedMacroParamInfosForSession[a:macroName]
+        unlet s:namedMacrosForSession[a:macroName]
+        unlet s:namedMacroParamInfosForSession[a:macroName]
+        return
+    endif
+    let macroDir = s:findNamedMacroDir(a:macroName)
     let newFilePath = s:constructMacroPath(macroDir, newName)
+    if filereadable(newFilePath) && confirm(
+            \ printf("Found existing macro with name '%s'. Overwrite?", newName),
+            \ "&Yes\n&No", 2, "Question") != 1
+            " Any response except yes is viewed as a cancel
+        echo "Save macro cancelled"
+        return
+    endif
+    let dataFilePath = s:constructMacroPath(macroDir, a:macroName)
+    let paramInfoListFilePath = s:constructMacroParameterFilePath(macroDir, a:macroName)
+    call s:assert(filereadable(dataFilePath))
+    let macroData = s:loadNamedMacroData(dataFilePath)
+    let paramInfoList = s:tryLoadNamedMacroParameterInfoFromFile(paramInfoListFilePath)
+    call delete(dataFilePath)
+    call delete(paramInfoListFilePath)
     call s:saveMacroFile(macroData, newFilePath)
+    if (!(paramInfoList is v:null))
+        let newParamInfoListFilePath = s:constructMacroParameterFilePath(macroDir, newName)
+        call s:saveMacroParameterFile(paramInfoList, newParamInfoListFilePath)
+    endif
     call s:echo("Renamed macro from '%s' to '%s'", a:macroName, newName)
 endfunction
 
 function! macrobatics#overwriteNamedMacro(macroName)
     if has_key(s:namedMacrosForSession, a:macroName)
-        let paramInfo = s:namedMacroParamInfosForSession[name]
+        let paramInfo = s:namedMacroParamInfosForSession[a:macroName]
         let overwriteParams = v:true
         if len(paramInfo) > 0
             let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
@@ -185,9 +215,9 @@ function! macrobatics#overwriteNamedMacro(macroName)
             endif
         endif
         if overwriteParams
-            let s:namedMacroParamInfosForSession[name] = s:promptForParameterInfo()
+            let s:namedMacroParamInfosForSession[a:macroName] = s:promptForParameterInfo()
         endif
-        let s:namedMacrosForSession[name] = getreg(s:defaultMacroReg)
+        let s:namedMacrosForSession[a:macroName] = getreg(s:defaultMacroReg)
         return
     endif
     let macroDir = s:findNamedMacroDir(a:macroName)
