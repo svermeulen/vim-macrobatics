@@ -62,8 +62,8 @@ endfunction
 
 function! macrobatics#displayNamedMacros()
     echohl WarningMsg | echo "--- Named Macros ---" | echohl None
-    for macro in macrobatics#getNamedMacros()
-        echo  macro
+    for name in macrobatics#getNamedMacros()
+        echo name
     endfor
 endfunction
 
@@ -76,19 +76,43 @@ function! macrobatics#displayHistory()
     endfor
 endfunction
 
-function! macrobatics#getNamedMacros()
-    let dirs = s:getNamedMacrosDirs()
-    let namesSet = {}
+function! s:getNamedMacrosInfo()
+    let result = []
+    let nameSet = {}
+
     for name in keys(s:namedMacrosForSession)
-        let namesSet[name] = 1
+        if !has_key(nameSet, name)
+            call add(result, {'name': name, 'type':'s'})
+            let nameSet[name] = 1
+        endif
     endfor
-    for dir in dirs
-        for filePath in globpath(dir, "*" . s:macroFileExtension, 0, 1)
-            let name = s:getMacroNameFromPath(filePath)
-            let namesSet[name] = 1
+
+    let dirMap = {
+        \ 'b': s:getBufferLocalNamedMacrosDirs(),
+        \ 'f': s:getFileTypeNamedMacrosDirs(),
+        \ 'g': [macrobatics#getGlobalNamedMacrosDir()]
+        \ }
+
+    for dirType in keys(dirMap)
+        for dir in dirMap[dirType]
+            for filePath in globpath(dir, "*" . s:macroFileExtension, 0, 1)
+                let name = s:getMacroNameFromPath(filePath)
+                if !has_key(nameSet, name)
+                    call add(result, {'name': name, 'type':dirType})
+                    let nameSet[name] = 1
+                endif
+            endfor
         endfor
     endfor
-    return keys(namesSet)
+    return result
+endfunction
+
+function! macrobatics#getNamedMacros()
+    let result = []
+    for info in s:getNamedMacrosInfo()
+        call add(result, info.name)
+    endfor
+    return result
 endfunction
 
 function! macrobatics#copyCurrentMacroToRegister(cnt, reg)
@@ -295,7 +319,12 @@ function! s:makeChoice(values, sink)
 endfunction
 
 function! s:chooseNamedMacro(sink)
-    call s:makeChoice(macrobatics#getNamedMacros(), a:sink)
+    let map = {}
+    for info in s:getNamedMacrosInfo()
+        let displayName = "[" . info.type . "] " . info.name
+        let map[displayName] = info.name
+    endfor
+    call s:makeChoice(map, a:sink)
 endfunction
 
 function! macrobatics#searchThenPlayNamedMacro(cnt)
