@@ -282,7 +282,15 @@ function! s:makeChoice(values, sink)
         " Require that they type it in exactly when recording, for this to work
         call a:sink(input(''))
     else
-        call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", [a:values, a:sink])
+        let makeChoiceArgs = v:null
+
+        if type(a:values) == type({})
+            let makeChoiceArgs = [keys(a:values), {choice -> a:sink(a:values[choice])}]
+        else
+            let makeChoiceArgs = [a:values, a:sink]
+        endif
+
+        call call("macrobatics#" . s:getFuzzySearchMethod() . "#makeChoice", makeChoiceArgs)
     endif
 endfunction
 
