@@ -474,7 +474,7 @@ endfunction
 function! s:processNamedMacro(macroName, autoplay, destinationRegister, paramOverrides, cnt)
     let playInfo = s:getPlayMacroInfoForName(a:macroName)
 
-    # deepcopy is necessary due to the param override below
+    " deepcopy is necessary due to the param override below
     let paramInfoList = deepcopy(playInfo.paramInfoList)
 
     if (!(a:paramOverrides is v:null))
