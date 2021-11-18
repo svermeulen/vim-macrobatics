@@ -405,7 +405,8 @@ endfunction
 
 function! macrobatics#playNamedMacro(name, ...)
     let playCount = a:0 ? a:1 : 1
-    call s:processNamedMacro(a:name, 1, s:playByNameMacroReg, playCount)
+    let paramOverrides = a:0 > 1 ? a:2 : v:null
+    call s:processNamedMacro(a:name, 1, s:playByNameMacroReg, paramOverrides, playCount)
 endfunction
 
 function! s:getPlayMacroInfoForName(name)
@@ -470,22 +471,40 @@ function s:tryGetMacroParametersInfoFromSettings(name)
     return get(globalMap, a:name, v:null)
 endfunction
 
-function! s:processNamedMacro(macroName, autoplay, destinationRegister, cnt)
+function! s:processNamedMacro(macroName, autoplay, destinationRegister, paramOverrides, cnt)
     let playInfo = s:getPlayMacroInfoForName(a:macroName)
+
+    # deepcopy is necessary due to the param override below
+    let paramInfoList = deepcopy(playInfo.paramInfoList)
+
+    if (!(a:paramOverrides is v:null))
+      for regOverride in keys(a:paramOverrides)
+        let found = v:false
+        for paramInfo in paramInfoList
+          if paramInfo.register == regOverride
+            let paramInfo.value = a:paramOverrides[regOverride]
+            let found = v:true
+            break
+          endif
+        endfor
+        call s:assert(found, "Unable to substitute parameter value in macro for register '" .. regOverride .. "'")
+      endfor
+    endif
+
     let s:queuedMacroInfo = {
         \   'macroData': playInfo.data,
         \   'macroName': a:macroName,
         \   'autoplay': a:autoplay,
         \   'playCount': a:cnt,
         \   'destinationRegister': a:destinationRegister,
-        \   'paramInputQueue': copy(playInfo.paramInfoList),
+        \   'paramInputQueue': paramInfoList,
         \ }
 
     call s:queuedMacroNext()
 endfunction
 
 function! macrobatics#selectNamedMacro(name)
-    call s:processNamedMacro(a:name, 0, s:defaultMacroReg, 0)
+    call s:processNamedMacro(a:name, 0, s:defaultMacroReg, v:null, 0)
 endfunction
 
 function! macrobatics#onVimEnter()
