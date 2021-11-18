@@ -330,7 +330,7 @@ nnoremap <leader>mf :call macrobatics#playNamedMacro('foo', 1, {'e', 'bar'})<cr>
 
 In the above case, we are playing the macro named 'foo' 1 time and overridding the parameter with register 'e' to have value 'bar'.  Note that the user will be prompted for any other registers not provideded.
 
-## Specifying Parameterized Macros Via .vimrc
+## Specifying Parameter Values Option 2
 
 One problem with providing parameter values as part of the call to `playNamedMacro` is that these parameter values will not be used when the macro is executed via the fuzzy search prompt.  Therefore an alternative way to specify parameter information is given below:
 
