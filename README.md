@@ -320,9 +320,19 @@ Macrobatics also has built in support for using 'named parameters' with your nam
 
 Then, the next time you execute this macro, you will be prompted to fill in values for all these parameters.
 
+## Specifying Parameter Values
+
+Instead of always relying on the user to provide values for macro parameters, you can also provide these values via script as well.  For example:
+
+```viml
+nnoremap <leader>mf :call macrobatics#playNamedMacro('foo', 1, {'e', 'bar'})<cr>
+```
+
+In the above case, we are playing the macro named 'foo' 1 time and overridding the parameter with register 'e' to have value 'bar'.  Note that the user will be prompted for any other registers not provideded.
+
 ## Specifying Parameterized Macros Via .vimrc
 
-As an alternative to the approach described in the [previous section](parameterized-macros), you can also specify macro parameters in your `.vimrc` file as well.  Normally the previous approach is sufficient, however for more complex cases you might want to take the following approach instead.
+One problem with providing parameter values as part of the call to `playNamedMacro` is that these parameter values will not be used when the macro is executed via the fuzzy search prompt.  Therefore an alternative way to specify parameter information is given below:
 
 For example, let's say you have a macro that renames the current method that you are in, and every time you run it, you want the user to supply the new name for the method.  You can add this macro by doing the following:
 
