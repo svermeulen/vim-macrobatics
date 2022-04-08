@@ -555,6 +555,18 @@ function! macrobatics#rotate(offset)
     call s:echo("Current Macro: %s", s:formatMacro(history[0]))
 endfunction
 
+function! s:removeExtraRegSuffix(reg)
+  let content = getreg(a:reg)
+  let contentType = getregtype(a:reg)
+
+  if content == '7'
+    call setreg(a:reg, "", contentType)
+  else
+    let content = content[0:len(content)-2]
+    call setreg(a:reg, content, contentType)
+  endif
+endfunction
+
 function! macrobatics#onRecordingComplete(_)
 
     if (s:recordInfo is v:null)
@@ -564,6 +576,8 @@ function! macrobatics#onRecordingComplete(_)
     endif
 
     let info = s:recordInfo
+    call s:removeExtraRegSuffix(info.reg)
+
     let info.recordContent = getreg(info.reg)
     if !(info.appendContents is v:null)
         let s:autoFinishRecordAfterPlay = 1
