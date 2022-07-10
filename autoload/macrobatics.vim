@@ -211,7 +211,7 @@ function! macrobatics#renameNamedMacro(macroName)
     endif
     let dataFilePath = s:constructMacroPath(macroDir, a:macroName)
     let paramInfoListFilePath = s:constructMacroParameterFilePath(macroDir, a:macroName)
-    call s:assert(filereadable(dataFilePath))
+    call s:assert(filereadable(dataFilePath), "File '%s' is not readable", dataFilePath)
     let macroData = s:loadNamedMacroData(dataFilePath)
     let paramInfoList = s:tryLoadNamedMacroParameterInfoFromFile(paramInfoListFilePath)
     call delete(dataFilePath)
@@ -246,7 +246,7 @@ function! macrobatics#overwriteNamedMacro(macroName)
     endif
     let macroDir = s:findNamedMacroDir(a:macroName)
     let filePath = s:constructMacroPath(macroDir, a:macroName)
-    call s:assert(filereadable(filePath))
+    call s:assert(filereadable(filePath), "File '%s' is not readable", filePath)
     let paramFilePath = s:constructMacroParameterFilePath(macroDir, a:macroName)
     let overwriteParamFile = v:true
     if filereadable(paramFilePath)
@@ -929,7 +929,7 @@ endfunction
 
 function s:loadNamedMacroData(filePath)
     let macroDataList = readfile(a:filePath, 'b')
-    call s:assert(len(macroDataList) == 1)
+    call s:assert(len(macroDataList) == 1, "Invalid content found in macro file '%s'.  Please re-record macro and try again.", a:filePath)
     return macroDataList[0]
 endfunction
 
