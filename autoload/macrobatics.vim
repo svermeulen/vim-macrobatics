@@ -306,7 +306,7 @@ endfunction
 
 function! macrobatics#nameCurrentMacro(...)
     let skipParamPrompt = a:0 ? a:1 : 0
-    call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir())
+    call s:saveCurrentMacroToDirectory(macrobatics#getGlobalNamedMacrosDir(), skipParamPrompt)
 endfunction
 
 function! s:makeChoice(values, sink)
