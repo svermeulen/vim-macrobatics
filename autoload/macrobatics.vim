@@ -889,7 +889,7 @@ function! s:saveCurrentMacroToDirectory(dirPath, skipParamPrompt)
             echo "Save macro cancelled"
             return
         endif
-        if !skipParamPrompt && filereadable(paramFilePath)
+        if !a:skipParamPrompt && filereadable(paramFilePath)
             let choice = confirm("Re-use previously saved parameter settings?", "&Yes\n&No", 2, "Question")
             if choice == 0
                 echo "Save macro cancelled"
@@ -902,7 +902,7 @@ function! s:saveCurrentMacroToDirectory(dirPath, skipParamPrompt)
     endif
     let macroData = getreg(s:defaultMacroReg)
     call s:saveMacroFile(macroData, dataFilePath)
-    if skipParamPrompt
+    if a:skipParamPrompt
         call delete(paramFilePath)
     else
         if overwriteParamFile
