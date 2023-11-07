@@ -648,6 +648,7 @@ function! macrobatics#play(reg, cnt)
     " Don't need to use i here though, because we only want this to run at the very end
     " Since otherwise it will overwrite s:repeatMacro
     call feedkeys("\<plug>(Mac__OnPlayMacroCompleted)", 'm')
+    let s:macrosInProgress -= 1
 endfunction
 
 function! s:assert(value, ...)
