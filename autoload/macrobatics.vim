@@ -43,6 +43,10 @@ function! macrobatics#getRecordRegister()
     return s:defaultMacroReg
 endfunction
 
+function! macrobatics#isRecording()
+    return s:isRecording
+endfunction
+
 function! macrobatics#isPlayingMacro()
     return s:macrosInProgress > 0
 endfunction
